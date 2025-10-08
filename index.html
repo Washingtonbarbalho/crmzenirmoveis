@@ -3,88 +3,577 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zenir Móveis - CRM</title>
-    
-    <!-- CSS e Ícones -->
-    <link rel="stylesheet" href="style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    
-    <!-- PWA Manifest -->
+    <title>CRM - Zenir Móveis</title>
+
+    <!-- PWA & SEO Meta Tags -->
+    <meta name="theme-color" content="#002078"/>
+    <meta name="description" content="Sistema de CRM para gerenciamento de clientes da Zenir Móveis.">
     <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
+
+    <!-- Favicon -->
+    <link rel="icon" href="assets/icons/icon-192x192.png" type="image/png">
     
-    <!-- Meta tags para PWA -->
-    <meta name="theme-color" content="#3498db"/>
-    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'zenir-blue': '#002078',
+                        'zenir-blue-dark': '#001a61',
+                        'zenir-red': '#E60000',
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div id="app">
-        <header>
-            <h1><i class="fas fa-couch"></i> CRM Zenir Móveis</h1>
-        </header>
-
-        <main>
-            <div class="form-container">
-                <h2><i class="fas fa-user-plus"></i> Adicionar / Editar Cliente</h2>
-                <form id="client-form">
-                    <input type="hidden" id="client-id">
-                    <div class="input-group">
-                        <label for="name">Nome:</label>
-                        <input type="text" id="name" placeholder="Nome completo do cliente" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" placeholder="email@exemplo.com" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="phone">Telefone:</label>
-                        <input type="tel" id="phone" placeholder="(00) 90000-0000" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="status">Status:</label>
-                        <select id="status" required>
-                            <option value="Lead">Lead</option>
-                            <option value="Contato Realizado">Contato Realizado</option>
-                            <option value="Proposta Enviada">Proposta Enviada</option>
-                            <option value="Cliente">Cliente</option>
-                        </select>
-                    </div>
-                    <div class="button-group">
-                        <button type="submit" class="btn-save"><i class="fas fa-save"></i> Salvar Cliente</button>
-                        <button type="button" id="clear-btn" class="btn-clear"><i class="fas fa-times"></i> Cancelar</button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="list-container">
-                <h2><i class="fas fa-users"></i> Lista de Clientes</h2>
-                <div class="search-box">
-                     <input type="text" id="search" placeholder="Buscar cliente por nome...">
-                     <i class="fas fa-search search-icon"></i>
-                </div>
-                <div id="client-list">
-                    <!-- Clientes serão inseridos aqui via JavaScript -->
-                </div>
-            </div>
-        </main>
-        
-        <footer>
-            <p>CRM Zenir Móveis &copy; 2025</p>
-        </footer>
+<body class="bg-gray-100 font-sans">
+    
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+        <div class="spinner"></div>
     </div>
 
-    <!-- JavaScript -->
-    <script src="script.js"></script>
+    <!-- Auth Container -->
+    <div id="auth-container" class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+        <!-- Login Page -->
+        <div id="login-page" class="w-full max-w-md">
+            <form id="login-form" class="bg-white p-8 rounded-lg shadow-xl">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-bold text-zenir-blue">CRM ZENIR MÓVEIS</h1>
+                </div>
+                <div id="login-error" class="bg-red-100 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded relative mb-4 hidden" role="alert"></div>
+                <div class="mb-4">
+                    <label for="login-email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="login-email" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <div class="mb-6">
+                    <label for="login-password" class="block text-sm font-medium text-gray-700">Senha</label>
+                    <input type="password" id="login-password" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <button type="submit" class="w-full bg-zenir-blue text-white font-bold py-3 px-4 rounded-lg hover:bg-zenir-blue-dark transition-colors">Entrar</button>
+                <p class="text-sm text-center mt-6">
+                    Não tem uma conta? <a href="#" id="go-to-register" class="font-medium text-zenir-red hover:underline">Cadastre-se</a>
+                </p>
+            </form>
+        </div>
+
+        <!-- Register Page -->
+        <div id="register-page" class="w-full max-w-md hidden">
+            <form id="register-form" class="bg-white p-8 rounded-lg shadow-xl">
+                <h2 class="text-2xl font-bold text-zenir-blue text-center mb-8">Criar Nova Conta</h2>
+                <div id="register-error" class="bg-red-100 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded relative mb-4 hidden" role="alert"></div>
+                 <div class="grid grid-cols-1 gap-4">
+                    <input type="text" id="register-name" placeholder="Nome Completo" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                    <input type="text" id="register-preferred-name" placeholder="Como gostaria de ser chamado?" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                    <input type="tel" id="register-phone" placeholder="Telefone" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue">
+                    <input type="text" id="register-filial" placeholder="Filial" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                    <input type="email" id="register-email" placeholder="Email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue">
+                    <div class="relative">
+                        <input type="password" id="register-password" placeholder="Senha" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue pr-10">
+                        <i id="toggle-password" class="fas fa-eye absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-400"></i>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="register-confirm-password" placeholder="Confirme a Senha" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue pr-10">
+                        <i id="toggle-confirm-password" class="fas fa-eye absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-400"></i>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-zenir-blue text-white font-bold py-3 px-4 rounded-lg hover:bg-zenir-blue-dark transition-colors mt-6">Cadastrar</button>
+                <p class="text-sm text-center mt-6">
+                    Já tem uma conta? <a href="#" id="go-to-login" class="font-medium text-zenir-red hover:underline">Faça Login</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- App Content -->
+    <div id="app-content" class="flex h-screen w-full">
+        <!-- Menu Lateral (Overlay) -->
+        <aside id="sidebar" class="sidebar fixed top-0 left-0 h-full z-40 w-64 bg-zenir-blue text-white flex-shrink-0 flex flex-col">
+            <div class="h-16 flex items-center justify-center bg-zenir-blue-dark shadow-md">
+                <h1 class="text-2xl font-bold">CRM Zenir</h1>
+            </div>
+            <nav class="flex-1 px-4 py-6 space-y-2">
+                <a href="#" data-page="leads" class="nav-link flex items-center px-4 py-3 rounded-lg transition-colors duration-200">
+                    <i class="fas fa-users w-6 text-center"></i>
+                    <span class="ml-4">Gerenciamento de Leads</span>
+                </a>
+                <a href="#" data-page="pos-venda" class="nav-link flex items-center px-4 py-3 rounded-lg transition-colors duration-200">
+                    <i class="fas fa-box-open w-6 text-center"></i>
+                    <span class="ml-4">Gerenciamento Pós-venda</span>
+                </a>
+                <a href="#" data-page="sac" class="nav-link flex items-center px-4 py-3 rounded-lg transition-colors duration-200">
+                    <i class="fas fa-headset w-6 text-center"></i>
+                    <span class="ml-4">Gerenciamento SAC</span>
+                </a>
+                <a href="#" data-page="users" id="nav-users-link" class="nav-link hidden flex items-center px-4 py-3 rounded-lg transition-colors duration-200">
+                    <i class="fas fa-user-cog w-6 text-center"></i>
+                    <span class="ml-4">Gerenciar Usuários</span>
+                </a>
+            </nav>
+             <div class="p-4 border-t border-blue-700">
+                <button id="logout-btn" class="w-full flex items-center justify-center px-4 py-2 rounded-lg text-white bg-zenir-red hover:bg-red-700 transition-colors">
+                    <i class="fas fa-sign-out-alt mr-2"></i>
+                    <span>Sair</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Conteúdo Principal -->
+        <div class="flex-1 flex flex-col w-full">
+             <!-- Header Principal com layout responsivo -->
+            <header class="flex-shrink-0 flex justify-between items-center bg-white p-4 shadow-md z-20 relative">
+                <div class="flex-1">
+                    <button id="menu-button" class="text-zenir-blue focus:outline-none">
+                        <i class="fas fa-bars fa-lg"></i>
+                    </button>
+                </div>
+                <div class="flex-1 text-center">
+                     <h1 id="page-title" class="text-lg md:text-xl font-bold text-zenir-blue whitespace-nowrap"></h1>
+                </div>
+                <div id="user-display-name" class="flex-1 text-right text-xs sm:text-sm font-medium text-gray-700 truncate"></div>
+            </header>
+
+
+            <!-- Área de Conteúdo Scrollável -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto">
+                <!-- PÁGINA DE LEADS -->
+                <div id="leads-page" class="page-content container mx-auto p-4 md:p-8">
+                    <div class="mb-8 text-center">
+                        <button id="open-add-lead-modal-btn" class="bg-zenir-red text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-transform transform hover:scale-105">
+                            <i class="fas fa-plus mr-2"></i>Adicionar Novo Lead
+                        </button>
+                    </div>
+                    <div class="mb-6 border-b border-gray-200">
+                        <nav id="leads-tabs-container" class="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto overflow-y-hidden pb-1" aria-label="Tabs"></nav>
+                    </div>
+                    <div id="leads-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    <div id="leads-pagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+                </div>
+
+                <!-- PÁGINA DE PÓS-VENDA -->
+                <div id="pos-venda-page" class="page-content container mx-auto p-4 md:p-8 hidden">
+                    <div class="mb-8 text-center">
+                        <button id="open-add-pos-venda-modal-btn" class="bg-zenir-red text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-transform transform hover:scale-105">
+                            <i class="fas fa-plus mr-2"></i>Adicionar Pós-venda
+                        </button>
+                    </div>
+                    <div class="mb-6 border-b border-gray-200">
+                        <nav id="pos-venda-tabs-container" class="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto overflow-y-hidden pb-1" aria-label="Tabs"></nav>
+                    </div>
+                    <div id="pos-venda-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    <div id="pos-venda-pagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+                </div>
+
+                <!-- PÁGINA DE SAC -->
+                <div id="sac-page" class="page-content container mx-auto p-4 md:p-8 hidden">
+                    <div class="mb-8 text-center">
+                        <button id="open-add-sac-modal-btn" class="bg-zenir-red text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-transform transform hover:scale-105">
+                            <i class="fas fa-plus mr-2"></i>Registrar Ocorrência
+                        </button>
+                    </div>
+                    <div class="mb-6 border-b border-gray-200">
+                        <nav id="sac-tabs-container" class="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto overflow-y-hidden pb-1" aria-label="Tabs"></nav>
+                    </div>
+                    <div id="sac-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    <div id="sac-pagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+                </div>
+
+                 <!-- PÁGINA DE USUÁRIOS (Admin) -->
+                <div id="users-page" class="page-content container mx-auto p-4 md:p-8 hidden">
+                    <div class="mb-6 border-b border-gray-200">
+                        <nav id="users-tabs-container" class="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto overflow-y-hidden pb-1" aria-label="Tabs"></nav>
+                    </div>
+                    <div id="users-list" class="bg-white rounded-lg shadow overflow-hidden"></div>
+                    <div id="users-pagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+
+    <!-- MODAIS -->
+    <!-- Add Lead Modal -->
+    <div id="add-lead-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-semibold text-zenir-blue mb-4 border-b pb-2">Adicionar Novo Lead</h2>
+            <form id="add-lead-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="nome" class="block text-sm font-medium text-gray-700 mb-1">Nome do Cliente</label>
+                    <input type="text" id="nome" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div>
+                    <label for="contato" class="block text-sm font-medium text-gray-700 mb-1">Contato (WhatsApp)</label>
+                    <input type="text" id="contato" placeholder="(XX) X XXXX-XXXX" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
+                </div>
+                 <div>
+                    <label for="estagio-contato" class="block text-sm font-medium text-gray-700 mb-1">Estágio do Contato</label>
+                    <select id="estagio-contato" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue bg-gray-100" disabled>
+                        <option value="Contato 1">Contato 1</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="proximo-contato" class="block text-sm font-medium text-gray-700 mb-1">Data para Retorno</label>
+                    <input type="date" id="proximo-contato" readonly required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed">
+                </div>
+                <input type="hidden" id="data-visita">
+                <div class="md:col-span-full">
+                    <label for="produto" class="block text-sm font-medium text-gray-700 mb-1">Produto(s) de Interesse</label>
+                    <input type="text" id="produto" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div class="md:col-span-full">
+                    <label for="motivo" class="block text-sm font-medium text-gray-700 mb-1">Objeção</label>
+                    <textarea id="motivo" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                </div>
+                <div class="md:col-span-full">
+                    <label for="proposta" class="block text-sm font-medium text-gray-700 mb-1">Proposta Apresentada</label>
+                    <textarea id="proposta" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                </div>
+                <div class="md:col-span-full flex justify-end gap-4 mt-2">
+                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
+                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar Lead</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Lead Modal -->
+    <div id="edit-lead-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-semibold text-zenir-blue mb-4">Editar Lead</h2>
+            <form id="edit-lead-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <input type="hidden" id="edit-lead-id">
+                <div>
+                    <label for="edit-nome" class="block text-sm font-medium text-gray-700">Nome</label>
+                    <input type="text" id="edit-nome" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div>
+                    <label for="edit-contato" class="block text-sm font-medium text-gray-700">Contato</label>
+                    <input type="text" id="edit-contato" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
+                </div>
+                 <div>
+                    <label for="edit-status-final" class="block text-sm font-medium text-gray-700">Status Final</label>
+                    <select id="edit-status-final" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                        <option value="Em Andamento">Em Andamento</option>
+                        <option value="Venda Realizada">Venda Realizada</option>
+                        <option value="Não Interessado">Não Interessado</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="edit-estagio-contato" class="block text-sm font-medium text-gray-700">Estágio</label>
+                    <select id="edit-estagio-contato" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                        <option value="Contato 1">Contato 1 (Próx. dia útil)</option>
+                        <option value="Contato 2">Contato 2 (+5 dias)</option>
+                        <option value="Contato 3">Contato 3 (+10 dias)</option>
+                        <option value="Contato 4">Contato 4 (Oferta final, +10 dias)</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="edit-proximo-contato" class="block text-sm font-medium text-gray-700">Data Retorno</label>
+                    <input type="date" id="edit-proximo-contato" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="edit-produto" class="block text-sm font-medium text-gray-700">Interesse</label>
+                    <input type="text" id="edit-produto" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="edit-motivo" class="block text-sm font-medium text-gray-700">Objeção</label>
+                    <textarea id="edit-motivo" rows="2" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="edit-proposta" class="block text-sm font-medium text-gray-700">Proposta</label>
+                    <textarea id="edit-proposta" rows="2" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                </div>
+                <div class="md:col-span-2 flex justify-end gap-4">
+                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
+                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-800 transition-colors">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Pós Venda Modal -->
+    <div id="add-pos-venda-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-semibold text-zenir-blue mb-4 border-b pb-2">Adicionar Pós-venda</h2>
+            <form id="add-pos-venda-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div>
+                    <label for="pv-nome" class="block text-sm font-medium text-gray-700 mb-1">Nome do Cliente</label>
+                    <input type="text" id="pv-nome" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div>
+                    <label for="pv-contato" class="block text-sm font-medium text-gray-700 mb-1">Contato</label>
+                    <input type="text" id="pv-contato" placeholder="(XX) X XXXX-XXXX" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="pv-pv" class="block text-sm font-medium text-gray-700 mb-1">PV da Venda</label>
+                    <input type="text" id="pv-pv" placeholder="PV-000000000-00" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="pv-produto" class="block text-sm font-medium text-gray-700 mb-1">Produto(s)</label>
+                    <textarea id="pv-produto" rows="2" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                </div>
+                <div>
+                    <label for="pv-data-compra" class="block text-sm font-medium text-gray-700 mb-1">Data da Compra</label>
+                    <input type="date" id="pv-data-compra" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <div>
+                    <label for="pv-previsao-entrega" class="block text-sm font-medium text-gray-700 mb-1">Previsão de Entrega</label>
+                    <input type="date" id="pv-previsao-entrega" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <div class="md:col-span-2 flex items-center gap-4">
+                    <input type="checkbox" id="pv-precisa-montagem" class="h-4 w-4 rounded border-gray-300 text-zenir-blue focus:ring-zenir-blue">
+                    <label for="pv-precisa-montagem" class="text-sm font-medium text-gray-700">Precisa de Montagem?</label>
+                </div>
+                <div id="pv-montagem-container" class="hidden md:col-span-2">
+                    <label for="pv-previsao-montagem" class="block text-sm font-medium text-gray-700 mb-1">Previsão de Montagem</label>
+                    <input type="date" id="pv-previsao-montagem" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <div class="md:col-span-full">
+                    <label for="pv-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                     <select id="pv-status" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                        <option>Aguardando Entrega</option>
+                        <option>Aguardando Montagem</option>
+                        <option>Concluído</option>
+                    </select>
+                </div>
+                <div class="md:col-span-full flex justify-end gap-4 mt-2">
+                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
+                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+     <!-- Edit Pós Venda Modal -->
+     <div id="edit-pos-venda-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-semibold text-zenir-blue mb-4 border-b pb-2">Editar Pós-venda</h2>
+            <form id="edit-pos-venda-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <input type="hidden" id="edit-pv-id">
+                 <div>
+                    <label for="edit-pv-nome" class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                    <input type="text" id="edit-pv-nome" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div>
+                    <label for="edit-pv-contato" class="block text-sm font-medium text-gray-700 mb-1">Contato</label>
+                    <input type="text" id="edit-pv-contato" placeholder="(XX) X XXXX-XXXX" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="edit-pv-pv" class="block text-sm font-medium text-gray-700 mb-1">PV da Venda</label>
+                    <input type="text" id="edit-pv-pv" placeholder="PV-000000000-00" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="edit-pv-produto" class="block text-sm font-medium text-gray-700 mb-1">Produto(s)</label>
+                    <textarea id="edit-pv-produto" rows="2" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                </div>
+                <div>
+                    <label for="edit-pv-data-compra" class="block text-sm font-medium text-gray-700 mb-1">Data da Compra</label>
+                    <input type="date" id="edit-pv-data-compra" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <div>
+                    <label for="edit-pv-previsao-entrega" class="block text-sm font-medium text-gray-700 mb-1">Previsão de Entrega</label>
+                    <input type="date" id="edit-pv-previsao-entrega" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <div class="md:col-span-2 flex items-center gap-4">
+                    <input type="checkbox" id="edit-pv-precisa-montagem" class="h-4 w-4 rounded border-gray-300 text-zenir-blue focus:ring-zenir-blue">
+                    <label for="edit-pv-precisa-montagem" class="text-sm font-medium text-gray-700">Precisa de Montagem?</label>
+                </div>
+                <div id="edit-pv-montagem-container" class="hidden md:col-span-2">
+                    <label for="edit-pv-previsao-montagem" class="block text-sm font-medium text-gray-700 mb-1">Previsão de Montagem</label>
+                    <input type="date" id="edit-pv-previsao-montagem" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <div class="md:col-span-full">
+                    <label for="edit-pv-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                     <select id="edit-pv-status" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                        <option>Aguardando Entrega</option>
+                        <option>Aguardando Montagem</option>
+                        <option>Concluído</option>
+                    </select>
+                </div>
+                <div class="md:col-span-full flex justify-end gap-4 mt-2">
+                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
+                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add SAC Modal -->
+    <div id="add-sac-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-semibold text-zenir-blue mb-4 border-b pb-2">Registrar Nova Ocorrência</h2>
+            <form id="add-sac-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div>
+                    <label for="sac-nome" class="block text-sm font-medium text-gray-700 mb-1">Nome do Cliente</label>
+                    <input type="text" id="sac-nome" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div>
+                    <label for="sac-contato" class="block text-sm font-medium text-gray-700 mb-1">Contato</label>
+                    <input type="text" id="sac-contato" placeholder="(XX) X XXXX-XXXX" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
+                </div>
+                <div>
+                    <label for="sac-pv" class="block text-sm font-medium text-gray-700 mb-1">PV da Venda</label>
+                    <input type="text" id="sac-pv" placeholder="PV-000000000-00" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div>
+                    <label for="sac-data" class="block text-sm font-medium text-gray-700 mb-1">Data da Ocorrência</label>
+                    <input type="date" id="sac-data" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="sac-tipo" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Ocorrência</label>
+                     <select id="sac-tipo" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                        <option>Entrega</option>
+                        <option>Montagem</option>
+                        <option>Assistência Técnica</option>
+                        <option>Outros</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="sac-descricao" class="block text-sm font-medium text-gray-700 mb-1">Descrição do Problema</label>
+                    <textarea id="sac-descricao" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                </div>
+                <div class="md:col-span-full">
+                    <label for="sac-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                     <select id="sac-status" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                        <option>Aberta</option>
+                        <option>Em Análise</option>
+                        <option>Resolvida</option>
+                    </select>
+                </div>
+                <div class="md:col-span-full flex justify-end gap-4 mt-2">
+                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
+                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit SAC Modal -->
+     <div id="edit-sac-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-semibold text-zenir-blue mb-4 border-b pb-2">Editar Ocorrência</h2>
+            <form id="edit-sac-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <input type="hidden" id="edit-sac-id">
+                <div>
+                    <label for="edit-sac-nome" class="block text-sm font-medium text-gray-700 mb-1">Nome do Cliente</label>
+                    <input type="text" id="edit-sac-nome" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div>
+                    <label for="edit-sac-contato" class="block text-sm font-medium text-gray-700 mb-1">Contato</label>
+                    <input type="text" id="edit-sac-contato" placeholder="(XX) X XXXX-XXXX" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
+                </div>
+                <div>
+                    <label for="edit-sac-pv" class="block text-sm font-medium text-gray-700 mb-1">PV da Venda</label>
+                    <input type="text" id="edit-sac-pv" placeholder="PV-000000000-00" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div>
+                    <label for="edit-sac-data" class="block text-sm font-medium text-gray-700 mb-1">Data da Ocorrência</label>
+                    <input type="date" id="edit-sac-data" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="edit-sac-tipo" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Ocorrência</label>
+                     <select id="edit-sac-tipo" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                        <option>Entrega</option>
+                        <option>Montagem</option>
+                        <option>Assistência Técnica</option>
+                        <option>Outros</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="edit-sac-descricao" class="block text-sm font-medium text-gray-700 mb-1">Descrição do Problema</label>
+                    <textarea id="edit-sac-descricao" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                </div>
+                <div class="md:col-span-full">
+                    <label for="edit-sac-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                     <select id="edit-sac-status" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                        <option>Aberta</option>
+                        <option>Em Análise</option>
+                        <option>Resolvida</option>
+                    </select>
+                </div>
+                <div class="md:col-span-full flex justify-end gap-4 mt-2">
+                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
+                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-sm modal-content text-center">
+            <i class="fas fa-exclamation-triangle text-4xl text-yellow-500 mb-4"></i>
+            <h2 class="text-xl font-bold text-gray-800 mb-2">Confirmar Exclusão</h2>
+            <p class="text-gray-600 mb-6">Tem certeza que deseja excluir? Esta ação não pode ser desfeita.</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancel-delete-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
+                <button id="confirm-delete-btn" class="bg-zenir-red text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 transition-colors">Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="edit-user-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg modal-content max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-semibold text-zenir-blue mb-4 border-b pb-2">Editar Usuário</h2>
+            <form id="edit-user-form" class="space-y-4">
+                <input type="hidden" id="edit-user-id">
+                <div>
+                    <label for="edit-user-name" class="block text-sm font-medium text-gray-700">Nome Completo</label>
+                    <input type="text" id="edit-user-name" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                 <div>
+                    <label for="edit-user-preferred-name" class="block text-sm font-medium text-gray-700">Como gostaria de ser chamado</label>
+                    <input type="text" id="edit-user-preferred-name" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div>
+                    <label for="edit-user-phone" class="block text-sm font-medium text-gray-700">Telefone</label>
+                    <input type="tel" id="edit-user-phone" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <div>
+                    <label for="edit-user-filial" class="block text-sm font-medium text-gray-700">Filial</label>
+                    <input type="text" id="edit-user-filial" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                </div>
+                <div class="flex justify-end gap-4 pt-4">
+                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
+                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase e Lógica Principal -->
+    <script type="module" src="app.js"></script>
+
+    <!-- Service Worker Registration -->
     <script>
-        // Registrar o Service Worker para funcionalidade PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
+                navigator.serviceWorker.register('/sw.js')
                     .then(registration => {
-                        console.log('ServiceWorker registrado com sucesso: ', registration.scope);
+                        console.log('Service Worker registrado com sucesso:', registration);
                     })
                     .catch(error => {
-                        console.log('Falha ao registrar o ServiceWorker: ', error);
+                        console.log('Falha ao registrar o Service Worker:', error);
                     });
             });
         }
