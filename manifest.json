@@ -1,0 +1,21 @@
+{
+  "name": "CRM Zenir Móveis",
+  "short_name": "CRM Zenir",
+  "description": "Uma aplicação de CRM para gerenciamento de leads, pós-venda e SAC.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#002078",
+  "theme_color": "#002078",
+  "icons": [
+    {
+      "src": "images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
