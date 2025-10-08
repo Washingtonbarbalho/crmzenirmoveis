@@ -1,17 +1,16 @@
 const CACHE_NAME = 'crm-zenir-cache-v1';
-// Lista de arquivos a serem armazenados em cache.
-// Usar caminhos relativos (./) garante que funcione corretamente no GitHub Pages.
 const urlsToCache = [
-  './',
-  './index.html',
-  './style.css',
-  './script.js',
-  './manifest.json',
-  './images/icon-192.png',
-  './images/icon-512.png'
+  '/',
+  '/index.html',
+  '/style.css',
+  '/script.js',
+  '/manifest.json',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css'
 ];
 
-// Evento de instalação: abre o cache e adiciona os arquivos principais.
+// Evento de Instalação: Salva os arquivos essenciais em cache.
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -22,23 +21,21 @@ self.addEventListener('install', event => {
   );
 });
 
-// Evento de fetch: intercepta as requisições e serve os arquivos do cache se disponíveis.
+// Evento de Fetch: Intercepta as requisições.
+// Tenta buscar da rede primeiro. Se falhar (offline), busca do cache.
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Se o arquivo estiver no cache, retorna ele.
+    fetch(event.request).catch(() => {
+      return caches.match(event.request).then(response => {
         if (response) {
           return response;
         }
-        // Se não, busca na rede.
-        return fetch(event.request);
-      }
-    )
+      });
+    })
   );
 });
 
-// Evento de ativação: limpa caches antigos para manter tudo atualizado.
+// Evento de Ativação: Limpa caches antigos se houver.
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
@@ -53,4 +50,3 @@ self.addEventListener('activate', event => {
     })
   );
 });
-
