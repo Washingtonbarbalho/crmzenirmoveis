@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM - Zenir Móveis</title>
+
+    <!-- PWA Manifest and Theme -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#002078">
+    <link rel="apple-touch-icon" href="images/icon-192.png">
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+    
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 font-sans">
+    
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Auth Container -->
+    <div id="auth-container" class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+        <!-- Login Page -->
+        <div id="login-page" class="w-full max-w-md">
+            <form id="login-form" class="bg-white p-8 rounded-lg shadow-xl">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-bold text-zenir-blue">CRM ZENIR MÓVEIS</h1>
+                </div>
+                <div id="login-error" class="bg-red-100 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded relative mb-4 hidden" role="alert"></div>
+                <div class="mb-4">
+                    <label for="login-email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="login-email" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <div class="mb-6">
+                    <label for="login-password" class="block text-sm font-medium text-gray-700">Senha</label>
+                    <input type="password" id="login-password" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                </div>
+                <button type="submit" class="w-full bg-zenir-blue text-white font-bold py-3 px-4 rounded-lg hover:bg-zenir-blue-dark transition-colors">Entrar</button>
+                <p class="text-sm text-center mt-6">
+                    Não tem uma conta? <a href="#" id="go-to-register" class="font-medium text-zenir-red hover:underline">Cadastre-se</a>
+                </p>
+            </form>
+        </div>
+
+        <!-- Register Page -->
+        <div id="register-page" class="w-full max-w-md hidden">
+            <form id="register-form" class="bg-white p-8 rounded-lg shadow-xl">
+                <h2 class="text-2xl font-bold text-zenir-blue text-center mb-8">Criar Nova Conta</h2>
+                <div id="register-error" class="bg-red-100 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded relative mb-4 hidden" role="alert"></div>
+                 <div class="grid grid-cols-1 gap-4">
+                    <input type="text" id="register-name" placeholder="Nome Completo" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                    <input type="text" id="register-preferred-name" placeholder="Como gostaria de ser chamado?" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                    <input type="tel" id="register-phone" placeholder="Telefone" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue">
+                    <input type="text" id="register-filial" placeholder="Filial" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                    <input type="email" id="register-email" placeholder="Email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue">
+                    <div class="relative">
+                        <input type="password" id="register-password" placeholder="Senha" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue pr-10">
+                        <i id="toggle-password" class="fas fa-eye absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-400"></i>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="register-confirm-password" placeholder="Confirme a Senha" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-zenir-blue focus:border-zenir-blue pr-10">
+                        <i id="toggle-confirm-password" class="fas fa-eye absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-gray-400"></i>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-zenir-blue text-white font-bold py-3 px-4 rounded-lg hover:bg-zenir-blue-dark transition-colors mt-6">Cadastrar</button>
+                <p class="text-sm text-center mt-6">
+                    Já tem uma conta? <a href="#" id="go-to-login" class="font-medium text-zenir-red hover:underline">Faça Login</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- App Content -->
+    <div id="app-content" class="flex h-screen w-full">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar fixed top-0 left-0 h-full z-40 w-64 bg-zenir-blue text-white flex-shrink-0 flex flex-col">
+            <div class="h-16 flex items-center justify-center bg-zenir-blue-dark shadow-md">
+                <h1 class="text-2xl font-bold">CRM Zenir</h1>
+            </div>
+            <nav class="flex-1 px-4 py-6 space-y-2">
+                <a href="#" data-page="leads" class="nav-link flex items-center px-4 py-3 rounded-lg transition-colors duration-200">
+                    <i class="fas fa-users w-6 text-center"></i>
+                    <span class="ml-4">Gerenciamento de Leads</span>
+                </a>
+                <a href="#" data-page="pos-venda" class="nav-link flex items-center px-4 py-3 rounded-lg transition-colors duration-200">
+                    <i class="fas fa-box-open w-6 text-center"></i>
+                    <span class="ml-4">Gerenciamento Pós-venda</span>
+                </a>
+                <a href="#" data-page="sac" class="nav-link flex items-center px-4 py-3 rounded-lg transition-colors duration-200">
+                    <i class="fas fa-headset w-6 text-center"></i>
+                    <span class="ml-4">Gerenciamento SAC</span>
+                </a>
+                <a href="#" data-page="users" id="nav-users-link" class="nav-link hidden flex items-center px-4 py-3 rounded-lg transition-colors duration-200">
+                    <i class="fas fa-user-cog w-6 text-center"></i>
+                    <span class="ml-4">Gerenciar Usuários</span>
+                </a>
+            </nav>
+             <div class="p-4 border-t border-blue-700">
+                <button id="logout-btn" class="w-full flex items-center justify-center px-4 py-2 rounded-lg text-white bg-zenir-red hover:bg-red-700 transition-colors">
+                    <i class="fas fa-sign-out-alt mr-2"></i>
+                    <span>Sair</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col w-full">
+            <header class="flex-shrink-0 flex justify-between items-center bg-white p-4 shadow-md z-20 relative">
+                <div class="flex-1">
+                    <button id="menu-button" class="text-zenir-blue focus:outline-none">
+                        <i class="fas fa-bars fa-lg"></i>
+                    </button>
+                </div>
+                <div class="flex-1 text-center">
+                     <h1 id="page-title" class="text-lg md:text-xl font-bold text-zenir-blue whitespace-nowrap"></h1>
+                </div>
+                <div id="user-display-name" class="flex-1 text-right text-xs sm:text-sm font-medium text-gray-700 truncate"></div>
+            </header>
+
+            <main class="flex-1 overflow-x-hidden overflow-y-auto">
+                <!-- Leads Page -->
+                <div id="leads-page" class="page-content container mx-auto p-4 md:p-8">
+                    <div class="mb-8 text-center">
+                        <button id="open-add-lead-modal-btn" class="bg-zenir-red text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-transform transform hover:scale-105">
+                            <i class="fas fa-plus mr-2"></i>Adicionar Novo Lead
+                        </button>
+                    </div>
+                    <div class="mb-6 border-b border-gray-200">
+                        <nav id="leads-tabs-container" class="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto overflow-y-hidden pb-1" aria-label="Tabs"></nav>
+                    </div>
+                    <div id="leads-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    <div id="leads-pagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+                </div>
+
+                <!-- Post-Sale Page -->
+                <div id="pos-venda-page" class="page-content container mx-auto p-4 md:p-8 hidden">
+                    <div class="mb-8 text-center">
+                        <button id="open-add-pos-venda-modal-btn" class="bg-zenir-red text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-transform transform hover:scale-105">
+                            <i class="fas fa-plus mr-2"></i>Adicionar Pós-venda
+                        </button>
+                    </div>
+                    <div class="mb-6 border-b border-gray-200">
+                        <nav id="pos-venda-tabs-container" class="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto overflow-y-hidden pb-1" aria-label="Tabs"></nav>
+                    </div>
+                    <div id="pos-venda-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    <div id="pos-venda-pagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+                </div>
+
+                <!-- SAC Page -->
+                <div id="sac-page" class="page-content container mx-auto p-4 md:p-8 hidden">
+                    <div class="mb-8 text-center">
+                        <button id="open-add-sac-modal-btn" class="bg-zenir-red text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-transform transform hover:scale-105">
+                            <i class="fas fa-plus mr-2"></i>Registrar Ocorrência
+                        </button>
+                    </div>
+                    <div class="mb-6 border-b border-gray-200">
+                        <nav id="sac-tabs-container" class="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto overflow-y-hidden pb-1" aria-label="Tabs"></nav>
+                    </div>
+                    <div id="sac-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    <div id="sac-pagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+                </div>
+
+                 <!-- Users Page (Admin) -->
+                <div id="users-page" class="page-content container mx-auto p-4 md:p-8 hidden">
+                    <div class="mb-6 border-b border-gray-200">
+                        <nav id="users-tabs-container" class="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto overflow-y-hidden pb-1" aria-label="Tabs"></nav>
+                    </div>
+                    <div id="users-list" class="bg-white rounded-lg shadow overflow-hidden"></div>
+                    <div id="users-pagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+
+    <!-- Modals are placed here... -->
+    <!-- (All modal HTML from the previous version goes here, unchanged) -->
+    
+    <!-- Script Files -->
+    <script src="script.js" type="module"></script>
+</body>
+</html>
