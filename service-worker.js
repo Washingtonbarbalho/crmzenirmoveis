@@ -3,14 +3,13 @@ const urlsToCache = [
   '/',
   '/index.html',
   '/style.css',
-  '/script.js',
+  '/app.js',
   '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css'
+  '/assets/icons/icon-192x192.png',
+  '/assets/icons/icon-512x512.png'
 ];
 
-// Evento de Instalação: Salva os arquivos essenciais em cache.
+// Evento de Instalação: Salva os arquivos no cache
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -21,32 +20,34 @@ self.addEventListener('install', event => {
   );
 });
 
-// Evento de Fetch: Intercepta as requisições.
-// Tenta buscar da rede primeiro. Se falhar (offline), busca do cache.
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request).then(response => {
-        if (response) {
-          return response;
-        }
-      });
-    })
-  );
-});
-
-// Evento de Ativação: Limpa caches antigos se houver.
+// Evento de Ativação: Limpa caches antigos
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          if (cacheName !== CACHE_NAME) {
             return caches.delete(cacheName);
           }
         })
       );
     })
+  );
+});
+
+// Evento de Fetch: Intercepta as requisições
+// Tenta buscar no cache primeiro, se não encontrar, busca na rede.
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // Se encontrar no cache, retorna
+        if (response) {
+          return response;
+        }
+        // Se não, busca na rede
+        return fetch(event.request);
+      }
+    )
   );
 });
