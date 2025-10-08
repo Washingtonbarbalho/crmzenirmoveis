@@ -45,7 +45,7 @@ const maskPhone = (event) => {
     event.target.value = value.toUpperCase();
 };
 
-// --- MÓDULOS DA APLICAÇÃO ---
+// --- MÓDulos da Aplicação ---
 const appManager = {
     uiManager: {
         body: document.body,
@@ -134,6 +134,8 @@ const appManager = {
             this.registerForm.addEventListener('submit', (e) => { e.preventDefault(); this.handleRegister(); });
             this.logoutBtn.addEventListener('click', () => {
                 appManager.uiManager.showLoading(true);
+                // CORREÇÃO 1: Limpa a página salva ao deslogar
+                localStorage.removeItem('lastVisitedPage');
                 signOut(auth);
             });
 
@@ -165,10 +167,14 @@ const appManager = {
             this.loginError.classList.add('hidden');
             const email = this.loginForm['login-email'].value;
             const password = this.loginForm['login-password'].value;
+            // CORREÇÃO 1: Marca que é um novo login
+            sessionStorage.setItem('isNewLogin', 'true');
             signInWithEmailAndPassword(auth, email, password).catch(error => {
                 this.loginError.textContent = "Email ou senha inválidos.";
                 this.loginError.classList.remove('hidden');
                 appManager.uiManager.showLoading(false);
+                // Limpa a marcação se o login falhar
+                sessionStorage.removeItem('isNewLogin');
             });
         },
         handleRegister() {
@@ -222,9 +228,19 @@ const appManager = {
                             appManager.posVendaManager.init(user, userData);
                             appManager.sacManager.init(user, userData);
                             appManager.usersManager.init(user);
+                            
+                            // CORREÇÃO 1: Lógica de navegação
+                            const isNewLogin = sessionStorage.getItem('isNewLogin') === 'true';
+                            if (isNewLogin) {
+                                // Se for um novo login, sempre vai para a página de leads
+                                appManager.uiManager.showPage('leads');
+                                sessionStorage.removeItem('isNewLogin'); // Limpa a flag
+                            } else {
+                                // Se for um refresh, recupera a última página visitada
+                                const lastPage = localStorage.getItem('lastVisitedPage') || 'leads';
+                                appManager.uiManager.showPage(lastPage);
+                            }
 
-                            // MUDANÇA 1: Sempre iniciar na página de leads
-                            appManager.uiManager.showPage('leads');
                         } else {
                             this.loginError.textContent = userData.status === 'Pendente' ? 'Seu cadastro está pendente de aprovação pelo administrador.' : 'Seu acesso foi bloqueado.';
                             this.loginError.classList.remove('hidden');
@@ -742,6 +758,7 @@ const appManager = {
     },
     
     usersManager: {
+        ADMIN_EMAIL: 'washington.wn8@gmail.com', // CORREÇÃO 2: Centraliza o email do admin
         state: { all: [], filter: 'Aprovados', docToDelete: null, currentPage: 1, itemsPerPage: 10, currentUser: null },
         ui: {
             list: document.getElementById('users-list'),
@@ -769,7 +786,7 @@ const appManager = {
         },
         
         listenForChanges() {
-            if (this.state.currentUser.email !== 'washington.wn8@gmail.com') return;
+            if (this.state.currentUser.email !== this.ADMIN_EMAIL) return;
             onSnapshot(query(collection(db, 'users')), (snapshot) => {
                 this.state.all = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 this.filterAndRender();
@@ -801,7 +818,28 @@ const appManager = {
                 userDiv.dataset.id = user.id;
 
                 const statusColor = this.colors[user.status] || 'bg-gray-100 text-gray-800';
-                const isAdmin = user.email === 'washington.wn8@gmail.com'; // MUDANÇA 3: Identifica o admin
+                const isAdmin = user.email === this.ADMIN_EMAIL;
+
+                // CORREÇÃO 2: Lógica de botões mais robusta
+                let actionButtonsHTML = '';
+                if (user.status === 'Pendente') {
+                    actionButtonsHTML += `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Aprovar</button>`;
+                }
+                if (user.status === 'Aprovado' && !isAdmin) {
+                    actionButtonsHTML += `<button data-action="deactivate" class="bg-yellow-500 text-white px-3 py-1 rounded-md text-xs hover:bg-yellow-600">Inativar</button>`;
+                }
+                if (user.status === 'Inativo' && !isAdmin) {
+                    actionButtonsHTML += `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Reativar</button>`;
+                }
+                
+                actionButtonsHTML += `<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit"></i></button>`;
+                
+                if (!isAdmin) {
+                    actionButtonsHTML += `<button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt"></i></button>`;
+                } else {
+                    // Adiciona um espaço vazio para manter o alinhamento
+                    actionButtonsHTML += `<div class="w-6"></div>`;
+                }
 
                 userDiv.innerHTML = `
                     <div class="flex-1 mb-4 sm:mb-0">
@@ -812,11 +850,7 @@ const appManager = {
                     </div>
                     <div class="flex items-center space-x-2">
                          <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${user.status}</span>
-                         ${user.status === 'Pendente' ? `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Aprovar</button>` : ''}
-                         ${user.status === 'Aprovado' && !isAdmin ? `<button data-action="deactivate" class="bg-yellow-500 text-white px-3 py-1 rounded-md text-xs hover:bg-yellow-600">Inativar</button>` : ''}
-                         ${user.status === 'Inativo' && !isAdmin ? `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Reativar</button>` : ''}
-                        <button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit"></i></button>
-                        ${!isAdmin ? `<button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt"></i></button>` : '<div class="w-6"></div>'}
+                         ${actionButtonsHTML}
                     </div>
                 `;
                 this.ui.list.appendChild(userDiv);
@@ -857,8 +891,7 @@ const appManager = {
             const action = button.dataset.action;
             const user = this.state.all.find(u => u.id === userId);
 
-            // MUDANÇA 3: Proteção extra na lógica
-            if (user && user.email === 'washington.wn8@gmail.com' && (action === 'deactivate' || action === 'delete')) {
+            if (user && user.email === this.ADMIN_EMAIL && (action === 'deactivate' || action === 'delete')) {
                 alert('A conta do administrador não pode ser alterada.');
                 return;
             }
@@ -905,7 +938,5 @@ const appManager = {
 };
 
 // --- INICIALIZAÇÃO ---
-document.addEventListener('DOMContentLoaded', () => {
-    appManager.authManager.init();
-});
+appManager.authManager.init();
 
