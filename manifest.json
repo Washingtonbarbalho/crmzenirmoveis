@@ -2,7 +2,7 @@
   "name": "CRM Zenir Móveis",
   "short_name": "CRM Zenir",
   "description": "Sistema de CRM para gerenciamento de clientes da Zenir Móveis.",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#002078",
@@ -19,3 +19,4 @@
     }
   ]
 }
+
