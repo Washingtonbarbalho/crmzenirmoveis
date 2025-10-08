@@ -223,8 +223,8 @@ const appManager = {
                             appManager.sacManager.init(user, userData);
                             appManager.usersManager.init(user);
 
-                            const lastPage = localStorage.getItem('lastVisitedPage') || 'leads';
-                            appManager.uiManager.showPage(lastPage);
+                            // MUDANÇA 1: Sempre iniciar na página de leads
+                            appManager.uiManager.showPage('leads');
                         } else {
                             this.loginError.textContent = userData.status === 'Pendente' ? 'Seu cadastro está pendente de aprovação pelo administrador.' : 'Seu acesso foi bloqueado.';
                             this.loginError.classList.remove('hidden');
@@ -801,10 +801,11 @@ const appManager = {
                 userDiv.dataset.id = user.id;
 
                 const statusColor = this.colors[user.status] || 'bg-gray-100 text-gray-800';
+                const isAdmin = user.email === 'washington.wn8@gmail.com'; // MUDANÇA 3: Identifica o admin
 
                 userDiv.innerHTML = `
                     <div class="flex-1 mb-4 sm:mb-0">
-                        <p class="font-bold text-gray-800">${user.name}</p>
+                        <p class="font-bold text-gray-800">${user.name} ${isAdmin ? '<span class="text-xs text-zenir-red font-bold">(Admin)</span>' : ''}</p>
                         <p class="text-sm text-gray-600">${user.email}</p>
                         <p class="text-sm text-gray-500">Telefone: ${user.phone || 'N/A'}</p>
                         <p class="text-sm text-gray-500">Filial: ${user.filial || 'N/A'}</p>
@@ -812,10 +813,10 @@ const appManager = {
                     <div class="flex items-center space-x-2">
                          <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${user.status}</span>
                          ${user.status === 'Pendente' ? `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Aprovar</button>` : ''}
-                         ${user.status === 'Aprovado' ? `<button data-action="deactivate" class="bg-yellow-500 text-white px-3 py-1 rounded-md text-xs hover:bg-yellow-600">Inativar</button>` : ''}
-                         ${user.status === 'Inativo' ? `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Reativar</button>` : ''}
+                         ${user.status === 'Aprovado' && !isAdmin ? `<button data-action="deactivate" class="bg-yellow-500 text-white px-3 py-1 rounded-md text-xs hover:bg-yellow-600">Inativar</button>` : ''}
+                         ${user.status === 'Inativo' && !isAdmin ? `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Reativar</button>` : ''}
                         <button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit"></i></button>
-                        <button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt"></i></button>
+                        ${!isAdmin ? `<button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt"></i></button>` : '<div class="w-6"></div>'}
                     </div>
                 `;
                 this.ui.list.appendChild(userDiv);
@@ -854,6 +855,13 @@ const appManager = {
             const card = button.closest('[data-id]');
             const userId = card.dataset.id;
             const action = button.dataset.action;
+            const user = this.state.all.find(u => u.id === userId);
+
+            // MUDANÇA 3: Proteção extra na lógica
+            if (user && user.email === 'washington.wn8@gmail.com' && (action === 'deactivate' || action === 'delete')) {
+                alert('A conta do administrador não pode ser alterada.');
+                return;
+            }
 
             switch(action) {
                 case 'approve': await updateDoc(doc(db, 'users', userId), { status: 'Aprovado' }); break;
@@ -863,9 +871,8 @@ const appManager = {
                     appManager.deleteModalManager.show();
                     break;
                 case 'edit':
-                    const userData = this.state.all.find(u => u.id === userId);
-                    if (userData) {
-                        this.populateEditForm(userData);
+                    if (user) {
+                        this.populateEditForm(user);
                     }
                     break;
             }
@@ -901,3 +908,4 @@ const appManager = {
 document.addEventListener('DOMContentLoaded', () => {
     appManager.authManager.init();
 });
+
