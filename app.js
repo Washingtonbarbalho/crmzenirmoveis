@@ -134,7 +134,6 @@ const appManager = {
             this.registerForm.addEventListener('submit', (e) => { e.preventDefault(); this.handleRegister(); });
             this.logoutBtn.addEventListener('click', () => {
                 appManager.uiManager.showLoading(true);
-                // CORREÇÃO 1: Limpa a página salva ao deslogar
                 localStorage.removeItem('lastVisitedPage');
                 signOut(auth);
             });
@@ -167,13 +166,11 @@ const appManager = {
             this.loginError.classList.add('hidden');
             const email = this.loginForm['login-email'].value;
             const password = this.loginForm['login-password'].value;
-            // CORREÇÃO 1: Marca que é um novo login
             sessionStorage.setItem('isNewLogin', 'true');
             signInWithEmailAndPassword(auth, email, password).catch(error => {
                 this.loginError.textContent = "Email ou senha inválidos.";
                 this.loginError.classList.remove('hidden');
                 appManager.uiManager.showLoading(false);
-                // Limpa a marcação se o login falhar
                 sessionStorage.removeItem('isNewLogin');
             });
         },
@@ -229,14 +226,11 @@ const appManager = {
                             appManager.sacManager.init(user, userData);
                             appManager.usersManager.init(user);
                             
-                            // CORREÇÃO 1: Lógica de navegação
                             const isNewLogin = sessionStorage.getItem('isNewLogin') === 'true';
                             if (isNewLogin) {
-                                // Se for um novo login, sempre vai para a página de leads
                                 appManager.uiManager.showPage('leads');
-                                sessionStorage.removeItem('isNewLogin'); // Limpa a flag
+                                sessionStorage.removeItem('isNewLogin');
                             } else {
-                                // Se for um refresh, recupera a última página visitada
                                 const lastPage = localStorage.getItem('lastVisitedPage') || 'leads';
                                 appManager.uiManager.showPage(lastPage);
                             }
@@ -322,21 +316,34 @@ const appManager = {
                 this.filterAndRender();
             });
         },
+        // MÉTODO ATUALIZADO
         filterAndRender() {
-            let filtered = [];
-            switch(this.state.filter) {
-                case 'Em Andamento': filtered = this.state.all.filter(l => l.statusFinal === 'Em Andamento'); break;
-                case 'Venda Realizada': filtered = this.state.all.filter(l => l.statusFinal === 'Venda Realizada'); break;
-                case 'Não Interessado': filtered = this.state.all.filter(l => l.statusFinal === 'Não Interessado'); break;
-                default: 
-                    filtered = [...this.state.all].sort((a,b) => {
-                        const isAFinal = a.statusFinal !== 'Em Andamento';
-                        const isBFinal = b.statusFinal !== 'Em Andamento';
-                        if (isAFinal && !isBFinal) return 1; if (!isAFinal && isBFinal) return -1;
-                        return a.proximoContato.localeCompare(b.proximoContato);
-                    });
-                    break;
+            let filtered = this.state.all;
+
+            // 1. Filtrar com base na aba selecionada
+            if (this.state.filter !== 'Visão Geral') {
+                filtered = this.state.all.filter(l => l.statusFinal === this.state.filter);
             }
+
+            // 2. Aplicar a organização (sort)
+            const statusPriority = { 'Em Andamento': 1, 'Venda Realizada': 2, 'Não Interessado': 3 };
+
+            filtered.sort((a, b) => {
+                // Lógica para a aba "Visão Geral"
+                if (this.state.filter === 'Visão Geral') {
+                    const priorityA = statusPriority[a.statusFinal] || 4;
+                    const priorityB = statusPriority[b.statusFinal] || 4;
+                    // Primeiro, agrupa por status
+                    if (priorityA !== priorityB) {
+                        return priorityA - priorityB;
+                    }
+                }
+                // Para todos os casos (dentro dos grupos ou em outras abas), organiza por data de retorno
+                const dateA = a.proximoContato || '9999-12-31';
+                const dateB = b.proximoContato || '9999-12-31';
+                return dateA.localeCompare(dateB);
+            });
+            
             this.render(filtered);
             this.updateTabCounts();
             this.updateTabStyles();
@@ -491,21 +498,39 @@ const appManager = {
                 this.filterAndRender();
             });
         },
+        // MÉTODO ATUALIZADO
         filterAndRender() {
-            let filtered = [];
-            if (this.state.filter === 'Visão Geral') {
-                const priority = { 'Aguardando Entrega': 1, 'Aguardando Montagem': 2, 'Concluído': 3 };
-                filtered = [...this.state.all].sort((a, b) => {
-                    const priorityA = priority[a.status] || 4;
-                    const priorityB = priority[b.status] || 4;
-                    if (priorityA !== priorityB) return priorityA - priorityB;
-                    if (a.status === 'Aguardando Entrega') return b.previsaoEntrega.localeCompare(a.previsaoEntrega);
-                    if (a.status === 'Aguardando Montagem') return (b.previsaoMontagem || '0').localeCompare(a.previsaoMontagem || '0');
-                    return 0;
-                });
-            } else {
+            let filtered = this.state.all;
+
+            if (this.state.filter !== 'Visão Geral') {
                 filtered = this.state.all.filter(pv => pv.status === this.state.filter);
             }
+
+            const statusPriority = { 'Aguardando Entrega': 1, 'Aguardando Montagem': 2, 'Concluído': 3 };
+
+            filtered.sort((a, b) => {
+                if (this.state.filter === 'Visão Geral') {
+                    const priorityA = statusPriority[a.status] || 4;
+                    const priorityB = statusPriority[b.status] || 4;
+                    if (priorityA !== priorityB) {
+                        return priorityA - priorityB;
+                    }
+                    // Dentro do mesmo grupo, usa a regra geral de entrega
+                }
+                
+                // Regra específica para a aba "Aguardando Montagem"
+                if (this.state.filter === 'Aguardando Montagem') {
+                    const dateA = a.previsaoMontagem || '9999-12-31';
+                    const dateB = b.previsaoMontagem || '9999-12-31';
+                    return dateA.localeCompare(dateB);
+                }
+
+                // Regra geral para todas as outras abas (por data de entrega)
+                const dateA = a.previsaoEntrega || '9999-12-31';
+                const dateB = b.previsaoEntrega || '9999-12-31';
+                return dateA.localeCompare(dateB);
+            });
+            
             this.render(filtered);
             this.updateTabCounts();
             this.updateTabStyles();
@@ -661,14 +686,30 @@ const appManager = {
                 this.filterAndRender();
             });
         },
+        // MÉTODO ATUALIZADO
         filterAndRender() {
-            let filtered = [];
-            if (this.state.filter === 'Visão Geral') {
-                const priority = { 'Aberta': 1, 'Em Análise': 2, 'Resolvida': 3 };
-                filtered = [...this.state.all].sort((a, b) => (priority[a.status] || 4) - (priority[b.status] || 4) || a.data.localeCompare(b.data));
-            } else {
-                filtered = this.state.all.filter(item => item.status === this.state.filter).sort((a,b) => a.data.localeCompare(b.data)); 
+            let filtered = this.state.all;
+
+            if (this.state.filter !== 'Visão Geral') {
+                filtered = this.state.all.filter(item => item.status === this.state.filter);
             }
+
+            const statusPriority = { 'Aberta': 1, 'Em Análise': 2, 'Resolvida': 3 };
+
+            filtered.sort((a, b) => {
+                if (this.state.filter === 'Visão Geral') {
+                    const priorityA = statusPriority[a.status] || 4;
+                    const priorityB = statusPriority[b.status] || 4;
+                    if (priorityA !== priorityB) {
+                        return priorityA - priorityB;
+                    }
+                }
+                // Organiza por data da ocorrência, da mais antiga para a mais nova
+                const dateA = a.data || '9999-12-31';
+                const dateB = b.data || '9999-12-31';
+                return dateA.localeCompare(dateB);
+            });
+            
             this.render(filtered);
             this.updateTabCounts();
             this.updateTabStyles();
@@ -758,7 +799,7 @@ const appManager = {
     },
     
     usersManager: {
-        ADMIN_EMAIL: 'washington.wn8@gmail.com', // CORREÇÃO 2: Centraliza o email do admin
+        ADMIN_EMAIL: 'washington.wn8@gmail.com',
         state: { all: [], filter: 'Aprovados', docToDelete: null, currentPage: 1, itemsPerPage: 10, currentUser: null },
         ui: {
             list: document.getElementById('users-list'),
@@ -820,7 +861,6 @@ const appManager = {
                 const statusColor = this.colors[user.status] || 'bg-gray-100 text-gray-800';
                 const isAdmin = user.email === this.ADMIN_EMAIL;
 
-                // CORREÇÃO 2: Lógica de botões mais robusta
                 let actionButtonsHTML = '';
                 if (user.status === 'Pendente') {
                     actionButtonsHTML += `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Aprovar</button>`;
@@ -837,7 +877,6 @@ const appManager = {
                 if (!isAdmin) {
                     actionButtonsHTML += `<button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt"></i></button>`;
                 } else {
-                    // Adiciona um espaço vazio para manter o alinhamento
                     actionButtonsHTML += `<div class="w-6"></div>`;
                 }
 
