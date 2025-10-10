@@ -252,7 +252,7 @@ const appManager = {
     },
 
     leadsManager: {
-        state: { all: [], filter: 'Em Andamento', docToDelete: null, currentPage: 1, itemsPerPage: 8, currentUser: null, currentUserData: null },
+        state: { all: [], filter: 'Em Andamento', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null },
         ui: {
             list: document.getElementById('leads-list'),
             tabsContainer: document.getElementById('leads-tabs-container'),
@@ -316,7 +316,6 @@ const appManager = {
                 this.filterAndRender();
             });
         },
-        // MÉTODO ATUALIZADO
         filterAndRender() {
             let filtered = this.state.all;
 
@@ -452,7 +451,7 @@ const appManager = {
     },
     
     posVendaManager: {
-        state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 8, currentUser: null, currentUserData: null },
+        state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null },
         ui: {
             list: document.getElementById('pos-venda-list'),
             tabsContainer: document.getElementById('pos-venda-tabs-container'),
@@ -498,7 +497,6 @@ const appManager = {
                 this.filterAndRender();
             });
         },
-        // MÉTODO ATUALIZADO
         filterAndRender() {
             let filtered = this.state.all;
 
@@ -515,17 +513,14 @@ const appManager = {
                     if (priorityA !== priorityB) {
                         return priorityA - priorityB;
                     }
-                    // Dentro do mesmo grupo, usa a regra geral de entrega
                 }
                 
-                // Regra específica para a aba "Aguardando Montagem"
                 if (this.state.filter === 'Aguardando Montagem') {
                     const dateA = a.previsaoMontagem || '9999-12-31';
                     const dateB = b.previsaoMontagem || '9999-12-31';
                     return dateA.localeCompare(dateB);
                 }
 
-                // Regra geral para todas as outras abas (por data de entrega)
                 const dateA = a.previsaoEntrega || '9999-12-31';
                 const dateB = b.previsaoEntrega || '9999-12-31';
                 return dateA.localeCompare(dateB);
@@ -643,7 +638,7 @@ const appManager = {
     },
 
     sacManager: {
-       state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 8, currentUser: null, currentUserData: null },
+       state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null },
         ui: {
             list: document.getElementById('sac-list'),
             tabsContainer: document.getElementById('sac-tabs-container'),
@@ -686,7 +681,6 @@ const appManager = {
                 this.filterAndRender();
             });
         },
-        // MÉTODO ATUALIZADO
         filterAndRender() {
             let filtered = this.state.all;
 
@@ -704,7 +698,6 @@ const appManager = {
                         return priorityA - priorityB;
                     }
                 }
-                // Organiza por data da ocorrência, da mais antiga para a mais nova
                 const dateA = a.data || '9999-12-31';
                 const dateB = b.data || '9999-12-31';
                 return dateA.localeCompare(dateB);
@@ -800,7 +793,7 @@ const appManager = {
     
     usersManager: {
         ADMIN_EMAIL: 'washington.wn8@gmail.com',
-        state: { all: [], filter: 'Aprovados', docToDelete: null, currentPage: 1, itemsPerPage: 10, currentUser: null },
+        state: { all: [], filter: 'Aprovados', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null },
         ui: {
             list: document.getElementById('users-list'),
             tabsContainer: document.getElementById('users-tabs-container'),
