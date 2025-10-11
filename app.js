@@ -471,15 +471,25 @@ const appManager = {
                 this.ui.addForm.reset();
                 this.ui.addForm.querySelector('#pv-montagem-container').classList.add('hidden');
                 this.ui.addForm['pv-data-compra'].value = getYYYYMMDD();
+                // Reset logistics to default (Entrega)
+                this.ui.addForm.querySelector('#pv-logistica-entrega').checked = true;
+                this.ui.addForm.querySelector('#pv-entrega-container').classList.remove('hidden');
+                this.ui.addForm.querySelector('#pv-retirada-container').classList.add('hidden');
+                this.ui.addForm.querySelector('#pv-previsao-entrega').required = true;
+                this.ui.addForm.querySelector('#pv-data-retirada').required = false;
+
                 this.ui.addModal.classList.remove('hidden');
                 appManager.uiManager.body.classList.add('modal-open');
             });
+
             this.ui.addForm.addEventListener('submit', (e) => this.handleFormSubmit(e, 'add'));
             this.ui.editForm.addEventListener('submit', (e) => this.handleFormSubmit(e, 'edit'));
+            
             this.ui.addForm['pv-contato'].addEventListener('input', maskPhone);
             this.ui.editForm['edit-pv-contato'].addEventListener('input', maskPhone);
             this.ui.addForm['pv-pv'].addEventListener('input', maskPV);
             this.ui.editForm['edit-pv-pv'].addEventListener('input', maskPV);
+
             this.ui.list.addEventListener('click', (e) => this.handleCardClick(e));
             this.ui.tabsContainer.addEventListener('click', (e) => {
                 const targetTab = e.target.closest('.tab-pos-venda');
@@ -489,8 +499,24 @@ const appManager = {
                 const button = e.target.closest('button');
                 if (button && button.dataset.page) { this.state.currentPage = parseInt(button.dataset.page); this.filterAndRender(); }
             });
+
             this.ui.addForm['pv-precisa-montagem'].addEventListener('change', (e) => { this.ui.addForm.querySelector('#pv-montagem-container').classList.toggle('hidden', !e.target.checked); });
             this.ui.editForm['edit-pv-precisa-montagem'].addEventListener('change', (e) => { this.ui.editForm.querySelector('#edit-pv-montagem-container').classList.toggle('hidden', !e.target.checked); });
+
+            // Logistics Radio Button Logic
+            const setupLogisticsToggle = (form, prefix) => {
+                form.querySelectorAll(`input[name="${prefix}-logistica"]`).forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        const isEntrega = e.target.value === 'Entrega';
+                        form.querySelector(`#${prefix}-entrega-container`).classList.toggle('hidden', !isEntrega);
+                        form.querySelector(`#${prefix}-retirada-container`).classList.toggle('hidden', isEntrega);
+                        form.querySelector(`#${prefix}-previsao-entrega`).required = isEntrega;
+                        form.querySelector(`#${prefix}-data-retirada`).required = !isEntrega;
+                    });
+                });
+            };
+            setupLogisticsToggle(this.ui.addForm, 'pv');
+            setupLogisticsToggle(this.ui.editForm, 'edit-pv');
         },
         listenForChanges() {
             const q = query(collection(db, 'pos_venda'), where("userId", "==", this.state.currentUser.uid));
@@ -523,8 +549,8 @@ const appManager = {
                     return dateA.localeCompare(dateB);
                 }
 
-                const dateA = a.previsaoEntrega || '9999-12-31';
-                const dateB = b.previsaoEntrega || '9999-12-31';
+                const dateA = a.tipoLogistica === 'Retirada' ? a.dataRetirada : a.previsaoEntrega || '9999-12-31';
+                const dateB = b.tipoLogistica === 'Retirada' ? b.dataRetirada : b.previsaoEntrega || '9999-12-31';
                 return dateA.localeCompare(dateB);
             });
             
@@ -546,7 +572,12 @@ const appManager = {
                 card.dataset.id = item.id;
                 const statusColor = this.colors[item.status] || 'bg-gray-100 text-gray-800';
                 const whatsappButton = `<button data-action="whatsapp" class="text-green-500 hover:opacity-75"><i class="fab fa-whatsapp fa-lg"></i></button>`;
-                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Produto:</strong> ${item.produto}</p><p><strong class="font-semibold text-gray-700">Entrega:</strong> <span class="font-bold text-zenir-red">${formatDate(item.previsaoEntrega)}</span></p>${item.precisaMontagem && item.previsaoMontagem ? `<p><strong class="font-semibold">Montagem:</strong> <span class="font-bold text-zenir-blue">${formatDate(item.previsaoMontagem)}</span></p>` : ''}${item.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${item.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-end items-center gap-3">${whatsappButton}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div>`;
+                
+                const logisticaInfo = item.tipoLogistica === 'Retirada'
+                    ? `<p><strong class="font-semibold text-gray-700">Retirada:</strong> <span class="font-bold text-zenir-red">${formatDate(item.dataRetirada)}</span></p>`
+                    : `<p><strong class="font-semibold text-gray-700">Entrega:</strong> <span class="font-bold text-zenir-red">${formatDate(item.previsaoEntrega)}</span></p>`;
+
+                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Produto:</strong> ${item.produto}</p>${logisticaInfo}${item.precisaMontagem && item.previsaoMontagem ? `<p><strong class="font-semibold">Montagem:</strong> <span class="font-bold text-zenir-blue">${formatDate(item.previsaoMontagem)}</span></p>` : ''}${item.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${item.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-end items-center gap-3">${whatsappButton}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div>`;
                 this.ui.list.appendChild(card);
             });
             this.renderPagination(pvToRender.length);
@@ -566,13 +597,17 @@ const appManager = {
             const modal = type === 'add' ? this.ui.addModal : this.ui.editModal;
             const idPrefix = type === 'add' ? 'pv-' : 'edit-pv-';
             const precisaMontagem = form.elements[`${idPrefix}precisa-montagem`].checked;
+            const tipoLogistica = form.elements[`${idPrefix}logistica`].value;
+
             const data = {
                 nome: form.elements[`${idPrefix}nome`].value.toUpperCase(),
                 contato: form.elements[`${idPrefix}contato`].value,
                 pv: form.elements[`${idPrefix}pv`].value.toUpperCase(),
                 produto: form.elements[`${idPrefix}produto`].value.toUpperCase(),
                 dataCompra: form.elements[`${idPrefix}data-compra`].value,
-                previsaoEntrega: form.elements[`${idPrefix}previsao-entrega`].value,
+                tipoLogistica: tipoLogistica,
+                previsaoEntrega: tipoLogistica === 'Entrega' ? form.elements[`${idPrefix}previsao-entrega`].value : '',
+                dataRetirada: tipoLogistica === 'Retirada' ? form.elements[`${idPrefix}data-retirada`].value : '',
                 precisaMontagem: precisaMontagem,
                 previsaoMontagem: precisaMontagem ? form.elements[`${idPrefix}previsao-montagem`].value : '',
                 status: form.elements[`${idPrefix}status`].value,
@@ -603,22 +638,52 @@ const appManager = {
         populateEditForm(data) {
             const f = this.ui.editForm;
             f['edit-pv-id'].value = data.id; f['edit-pv-nome'].value = data.nome; f['edit-pv-contato'].value = data.contato;
-            f['edit-pv-pv'].value = data.pv; f['edit-pv-produto'].value = data.produto; f['edit-pv-data-compra'].value = data.dataCompra; f['edit-pv-previsao-entrega'].value = data.previsaoEntrega;
+            f['edit-pv-pv'].value = data.pv; f['edit-pv-produto'].value = data.produto; f['edit-pv-data-compra'].value = data.dataCompra;
             f['edit-pv-status'].value = data.status; f['edit-pv-precisa-montagem'].checked = data.precisaMontagem;
             f['edit-pv-observacao'].value = data.observacao || '';
+            
+            // Populate logistics
+            const isEntrega = data.tipoLogistica !== 'Retirada'; // Default to Entrega if not set
+            f.querySelector('#edit-pv-logistica-entrega').checked = isEntrega;
+            f.querySelector('#edit-pv-logistica-retirada').checked = !isEntrega;
+
+            const entregaContainer = f.querySelector('#edit-pv-entrega-container');
+            const retiradaContainer = f.querySelector('#edit-pv-retirada-container');
+            entregaContainer.classList.toggle('hidden', !isEntrega);
+            retiradaContainer.classList.toggle('hidden', isEntrega);
+
+            f['edit-pv-previsao-entrega'].required = isEntrega;
+            f['edit-pv-data-retirada'].required = !isEntrega;
+
+            if (isEntrega) {
+                f['edit-pv-previsao-entrega'].value = data.previsaoEntrega || '';
+            } else {
+                f['edit-pv-data-retirada'].value = data.dataRetirada || '';
+            }
+            
+            // Populate montagem
             const montagemContainer = f.querySelector('#edit-pv-montagem-container');
             montagemContainer.classList.toggle('hidden', !data.precisaMontagem);
             if(data.precisaMontagem) { f['edit-pv-previsao-montagem'].value = data.previsaoMontagem; }
+            
             this.ui.editModal.classList.remove('hidden');
             appManager.uiManager.body.classList.add('modal-open');
         },
         getMessageForStatus(data, salesPersonName) {
             const nomeCliente = data.nome.split(' ')[0];
             const salesPersonTitle = `${salesPersonName}, Vendedor(a) da Zenir Móveis`;
+            
+            let aguardandoMessage;
+            if (data.tipoLogistica === 'Retirada') {
+                 aguardandoMessage = `Olá, ${nomeCliente}! Sou ${salesPersonTitle}. Passando para confirmar que seu produto (*${data.produto}*) já está disponível para retirada. Deu tudo certo por aí?`;
+            } else { // Entrega
+                 aguardandoMessage = `Olá, ${nomeCliente}! Sou ${salesPersonTitle}. Vimos que a entrega do seu produto (*${data.produto}*) estava programada para hoje. Deu tudo certo por aí? O produto chegou em perfeitas condições?`;
+            }
+
             const messages = {
-                'Aguardando Entrega': `Olá, ${nomeCliente}! Sou ${salesPersonTitle}. Vimos que a entrega do seu produto (*${data.produto}*) estava programada para hoje. Deu tudo certo por aí? O produto chegou em perfeitas condições?`,
+                'Aguardando Entrega': aguardandoMessage,
                 'Aguardando Montagem': `Olá, ${nomeCliente}, tudo bem? Sou ${salesPersonTitle}, e estou passando para saber se a montagem do seu produto (*${data.produto}*) foi realizada e se ficou tudo como você esperava. Sua satisfação é nossa prioridade!`,
-                'Concluído': `Olá, ${nomeCliente}! Que ótimo que já está tudo certo com sua compra na Zenir Móveis! ✨ Aqui é ${salesPersonTitle}. Salve nosso contato na sua agenda! Assim, você fica por dentro das novidades e recebe nossas melhores ofertas em primeira mão. Até a próxima!`
+                'Concluído': `Olá, ${nomeCliente}! Que ótimo que já está tudo certo com sua compra na Zenir Móveis! ✨ Salve meu contato na sua agenda! Assim, você fica por dentro das novidades e recebe minhas melhores ofertas em primeira mão. Até a próxima!`
             };
             return messages[data.status] || `Olá ${nomeCliente}! Entrando em contato sobre a sua compra na Zenir Móveis.`;
         },
@@ -977,3 +1042,4 @@ const appManager = {
 
 // --- INICIALIZAÇÃO ---
 appManager.authManager.init();
+
