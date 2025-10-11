@@ -4,15 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRM - Zenir Móveis</title>
-
-    <!-- PWA & SEO Meta Tags -->
-    <meta name="theme-color" content="#002078"/>
-    <meta name="description" content="Sistema de CRM para gerenciamento de clientes da Zenir Móveis.">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
-
-    <!-- Favicon -->
-    <link rel="icon" href="assets/icons/icon-192x192.png" type="image/png">
     
     <!-- Google Fonts: Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,8 +32,11 @@
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- Custom Stylesheet -->
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.png">
+    <link rel="icon" href="/assets/icons/favicon.ico" type="image/x-icon">
+    <meta name="theme-color" content="#002078"/>
 </head>
 <body class="bg-gray-100 font-sans">
     
@@ -138,19 +132,17 @@
 
         <!-- Conteúdo Principal -->
         <div class="flex-1 flex flex-col w-full">
-             <!-- Header Principal com layout responsivo (NOVO LAYOUT) -->
-            <header class="flex-shrink-0 bg-white p-4 shadow-md z-20 relative flex flex-col md:flex-row md:items-center">
-                <!-- Wrapper para botão de menu e saudação -->
-                <div class="w-full flex justify-between items-center mb-3 md:mb-0 md:flex-1">
-                    <button id="menu-button" class="text-zenir-blue focus:outline-none">
+            <header class="flex-shrink-0 bg-white p-4 shadow-md z-20 relative">
+                <div class="flex justify-between items-center w-full">
+                    <button id="menu-button" class="text-zenir-blue focus:outline-none md:hidden">
                         <i class="fas fa-bars fa-lg"></i>
                     </button>
-                    <div id="user-display-name" class="text-right text-sm font-medium text-gray-700 truncate pl-4"></div>
+                    <div class="flex-1 text-center md:text-left">
+                         <h1 id="page-title" class="text-lg md:text-xl font-bold text-zenir-blue whitespace-nowrap"></h1>
+                    </div>
+                    <div id="user-display-name" class="hidden md:block text-right text-sm font-medium text-gray-700 truncate"></div>
                 </div>
-                <!-- Wrapper para o título da página (centralizado) -->
-                <div class="w-full text-center md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:pointer-events-none">
-                     <h1 id="page-title" class="text-xl font-bold text-zenir-blue whitespace-nowrap"></h1>
-                </div>
+                 <div id="user-display-name-mobile" class="md:hidden text-center text-xs font-medium text-gray-700 truncate mt-2"></div>
             </header>
 
             <!-- Área de Conteúdo Scrollável -->
@@ -212,97 +204,50 @@
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
 
     <!-- MODAIS -->
-    <!-- Add Lead Modal -->
+    <!-- Modal Adicionar Lead -->
     <div id="add-lead-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
             <h2 class="text-2xl font-semibold text-zenir-blue mb-4 border-b pb-2">Adicionar Novo Lead</h2>
             <form id="add-lead-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label for="nome" class="block text-sm font-medium text-gray-700 mb-1">Nome do Cliente</label>
-                    <input type="text" id="nome" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                <div>
-                    <label for="contato" class="block text-sm font-medium text-gray-700 mb-1">Contato (WhatsApp)</label>
-                    <input type="text" id="contato" placeholder="(XX) X XXXX-XXXX" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
-                </div>
-                 <div>
-                    <label for="estagio-contato" class="block text-sm font-medium text-gray-700 mb-1">Estágio do Contato</label>
-                    <select id="estagio-contato" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue bg-gray-100" disabled>
-                        <option value="Contato 1">Contato 1</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="proximo-contato" class="block text-sm font-medium text-gray-700 mb-1">Data para Retorno</label>
-                    <input type="date" id="proximo-contato" readonly required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed">
-                </div>
+                <!-- Campos existentes -->
+                <input type="text" id="nome" placeholder="Nome do Cliente" required class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                <input type="text" id="contato" placeholder="Contato (WhatsApp)" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
+                <select id="estagio-contato" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue bg-gray-100" disabled><option value="Contato 1">Contato 1</option></select>
+                <input type="date" id="proximo-contato" readonly required class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed">
                 <input type="hidden" id="data-visita">
-                <div class="md:col-span-full">
-                    <label for="produto" class="block text-sm font-medium text-gray-700 mb-1">Produto(s) de Interesse</label>
-                    <input type="text" id="produto" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                <div class="md:col-span-full">
-                    <label for="motivo" class="block text-sm font-medium text-gray-700 mb-1">Objeção</label>
-                    <textarea id="motivo" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
-                </div>
-                <div class="md:col-span-full">
-                    <label for="proposta" class="block text-sm font-medium text-gray-700 mb-1">Proposta Apresentada</label>
-                    <textarea id="proposta" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
-                </div>
-                <div class="md:col-span-full flex justify-end gap-4 mt-2">
+                <input type="text" id="produto" placeholder="Produto(s) de Interesse" required class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                <textarea id="motivo" rows="2" placeholder="Objeção" class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                <textarea id="proposta" rows="2" placeholder="Proposta Apresentada" class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                <!-- Novo Campo de Observações -->
+                <textarea id="observacoes" rows="3" placeholder="Observações Adicionais..." class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                <div class="md:col-span-2 flex justify-end gap-4 mt-2">
                     <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
                     <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar Lead</button>
                 </div>
             </form>
         </div>
     </div>
-
-    <!-- Edit Lead Modal -->
+    <!-- Modal Editar Lead -->
     <div id="edit-lead-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
-         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
             <h2 class="text-2xl font-semibold text-zenir-blue mb-4">Editar Lead</h2>
             <form id="edit-lead-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <input type="hidden" id="edit-lead-id">
-                <div>
-                    <label for="edit-nome" class="block text-sm font-medium text-gray-700">Nome</label>
-                    <input type="text" id="edit-nome" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                <div>
-                    <label for="edit-contato" class="block text-sm font-medium text-gray-700">Contato</label>
-                    <input type="text" id="edit-contato" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
-                </div>
-                 <div>
-                    <label for="edit-status-final" class="block text-sm font-medium text-gray-700">Status Final</label>
-                    <select id="edit-status-final" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                        <option value="Em Andamento">Em Andamento</option>
-                        <option value="Venda Realizada">Venda Realizada</option>
-                        <option value="Não Interessado">Não Interessado</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="edit-estagio-contato" class="block text-sm font-medium text-gray-700">Estágio</label>
-                    <select id="edit-estagio-contato" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                        <option value="Contato 1">Contato 1 (Próx. dia útil)</option>
-                        <option value="Contato 2">Contato 2 (+5 dias)</option>
-                        <option value="Contato 3">Contato 3 (+10 dias)</option>
-                        <option value="Contato 4">Contato 4 (Oferta final, +10 dias)</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2">
-                    <label for="edit-proximo-contato" class="block text-sm font-medium text-gray-700">Data Retorno</label>
-                    <input type="date" id="edit-proximo-contato" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="edit-produto" class="block text-sm font-medium text-gray-700">Interesse</label>
-                    <input type="text" id="edit-produto" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="edit-motivo" class="block text-sm font-medium text-gray-700">Objeção</label>
-                    <textarea id="edit-motivo" rows="2" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
-                </div>
-                <div class="md:col-span-2">
-                    <label for="edit-proposta" class="block text-sm font-medium text-gray-700">Proposta</label>
-                    <textarea id="edit-proposta" rows="2" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
-                </div>
+                <!-- Campos existentes -->
+                <input type="text" id="edit-nome" placeholder="Nome" required class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                <input type="text" id="edit-contato" placeholder="Contato" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
+                <select id="edit-status-final" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                    <option value="Em Andamento">Em Andamento</option><option value="Venda Realizada">Venda Realizada</option><option value="Não Interessado">Não Interessado</option>
+                </select>
+                <select id="edit-estagio-contato" class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                    <option value="Contato 1">Contato 1 (Próx. dia útil)</option><option value="Contato 2">Contato 2 (+5 dias)</option><option value="Contato 3">Contato 3 (+10 dias)</option><option value="Contato 4">Contato 4 (Oferta final, +10 dias)</option>
+                </select>
+                <input type="date" id="edit-proximo-contato" required class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
+                <input type="text" id="edit-produto" placeholder="Interesse" required class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
+                <textarea id="edit-motivo" rows="2" placeholder="Objeção" class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                <textarea id="edit-proposta" rows="2" placeholder="Proposta" class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                <!-- Novo Campo de Observações -->
+                <textarea id="edit-observacoes" rows="3" placeholder="Observações Adicionais..." class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
                 <div class="md:col-span-2 flex justify-end gap-4">
                     <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
                     <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-800 transition-colors">Salvar</button>
@@ -310,216 +255,100 @@
             </form>
         </div>
     </div>
-
-    <!-- Add Pós Venda Modal -->
+    
+    <!-- Modal Adicionar Pós-venda -->
     <div id="add-pos-venda-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
             <h2 class="text-2xl font-semibold text-zenir-blue mb-4 border-b pb-2">Adicionar Pós-venda</h2>
-            <form id="add-pos-venda-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div>
-                    <label for="pv-nome" class="block text-sm font-medium text-gray-700 mb-1">Nome do Cliente</label>
-                    <input type="text" id="pv-nome" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                <div>
-                    <label for="pv-contato" class="block text-sm font-medium text-gray-700 mb-1">Contato</label>
-                    <input type="text" id="pv-contato" placeholder="(XX) X XXXX-XXXX" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="pv-pv" class="block text-sm font-medium text-gray-700 mb-1">PV da Venda</label>
-                    <input type="text" id="pv-pv" placeholder="PV-000000000-00" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="pv-produto" class="block text-sm font-medium text-gray-700 mb-1">Produto(s)</label>
-                    <textarea id="pv-produto" rows="2" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
-                </div>
-                <div>
-                    <label for="pv-data-compra" class="block text-sm font-medium text-gray-700 mb-1">Data da Compra</label>
-                    <input type="date" id="pv-data-compra" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                </div>
-                <div>
-                    <label for="pv-previsao-entrega" class="block text-sm font-medium text-gray-700 mb-1">Previsão de Entrega</label>
-                    <input type="date" id="pv-previsao-entrega" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                </div>
-                <div class="md:col-span-2 flex items-center gap-4">
-                    <input type="checkbox" id="pv-precisa-montagem" class="h-4 w-4 rounded border-gray-300 text-zenir-blue focus:ring-zenir-blue">
-                    <label for="pv-precisa-montagem" class="text-sm font-medium text-gray-700">Precisa de Montagem?</label>
-                </div>
-                <div id="pv-montagem-container" class="hidden md:col-span-2">
-                    <label for="pv-previsao-montagem" class="block text-sm font-medium text-gray-700 mb-1">Previsão de Montagem</label>
-                    <input type="date" id="pv-previsao-montagem" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                </div>
-                <div class="md:col-span-full">
-                    <label for="pv-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                     <select id="pv-status" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                        <option>Aguardando Entrega</option>
-                        <option>Aguardando Montagem</option>
-                        <option>Concluído</option>
-                    </select>
-                </div>
-                <div class="md:col-span-full flex justify-end gap-4 mt-2">
-                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
-                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar</button>
+            <form id="add-pos-venda-form" class="space-y-4">
+                <input type="text" id="pv-nome" placeholder="Nome do Cliente" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase">
+                <input type="text" id="pv-contato" placeholder="Contato (XX) X XXXX-XXXX" required class="w-full px-3 py-2 border border-gray-300 rounded-md" maxlength="16">
+                <input type="text" id="pv-pv" placeholder="PV da Venda (PV-000000000-00)" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase">
+                <textarea id="pv-produto" rows="2" placeholder="Produto(s)" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase"></textarea>
+                <input type="date" id="pv-data-compra" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                <input type="date" id="pv-previsao-entrega" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                <div class="flex items-center gap-4"><input type="checkbox" id="pv-precisa-montagem" class="h-4 w-4 rounded"><label for="pv-precisa-montagem">Precisa de Montagem?</label></div>
+                <div id="pv-montagem-container" class="hidden"><input type="date" id="pv-previsao-montagem" class="w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                <select id="pv-status" class="w-full px-3 py-2 border border-gray-300 rounded-md"><option>Aguardando Entrega</option><option>Aguardando Montagem</option><option>Concluído</option></select>
+                <!-- Novo Campo de Observações -->
+                <textarea id="pv-observacoes" rows="3" placeholder="Observações Adicionais..." class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase"></textarea>
+                <div class="flex justify-end gap-4 mt-2">
+                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg">Salvar</button>
                 </div>
             </form>
         </div>
     </div>
-
-     <!-- Edit Pós Venda Modal -->
+    <!-- Modal Editar Pós-venda -->
      <div id="edit-pos-venda-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
             <h2 class="text-2xl font-semibold text-zenir-blue mb-4 border-b pb-2">Editar Pós-venda</h2>
-            <form id="edit-pos-venda-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form id="edit-pos-venda-form" class="space-y-4">
                 <input type="hidden" id="edit-pv-id">
-                 <div>
-                    <label for="edit-pv-nome" class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-                    <input type="text" id="edit-pv-nome" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                <div>
-                    <label for="edit-pv-contato" class="block text-sm font-medium text-gray-700 mb-1">Contato</label>
-                    <input type="text" id="edit-pv-contato" placeholder="(XX) X XXXX-XXXX" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="edit-pv-pv" class="block text-sm font-medium text-gray-700 mb-1">PV da Venda</label>
-                    <input type="text" id="edit-pv-pv" placeholder="PV-000000000-00" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="edit-pv-produto" class="block text-sm font-medium text-gray-700 mb-1">Produto(s)</label>
-                    <textarea id="edit-pv-produto" rows="2" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
-                </div>
-                <div>
-                    <label for="edit-pv-data-compra" class="block text-sm font-medium text-gray-700 mb-1">Data da Compra</label>
-                    <input type="date" id="edit-pv-data-compra" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                </div>
-                <div>
-                    <label for="edit-pv-previsao-entrega" class="block text-sm font-medium text-gray-700 mb-1">Previsão de Entrega</label>
-                    <input type="date" id="edit-pv-previsao-entrega" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                </div>
-                <div class="md:col-span-2 flex items-center gap-4">
-                    <input type="checkbox" id="edit-pv-precisa-montagem" class="h-4 w-4 rounded border-gray-300 text-zenir-blue focus:ring-zenir-blue">
-                    <label for="edit-pv-precisa-montagem" class="text-sm font-medium text-gray-700">Precisa de Montagem?</label>
-                </div>
-                <div id="edit-pv-montagem-container" class="hidden md:col-span-2">
-                    <label for="edit-pv-previsao-montagem" class="block text-sm font-medium text-gray-700 mb-1">Previsão de Montagem</label>
-                    <input type="date" id="edit-pv-previsao-montagem" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                </div>
-                <div class="md:col-span-full">
-                    <label for="edit-pv-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                     <select id="edit-pv-status" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                        <option>Aguardando Entrega</option>
-                        <option>Aguardando Montagem</option>
-                        <option>Concluído</option>
-                    </select>
-                </div>
-                <div class="md:col-span-full flex justify-end gap-4 mt-2">
-                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
-                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar Alterações</button>
+                <input type="text" id="edit-pv-nome" placeholder="Nome" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase">
+                <input type="text" id="edit-pv-contato" placeholder="Contato" required class="w-full px-3 py-2 border border-gray-300 rounded-md" maxlength="16">
+                <input type="text" id="edit-pv-pv" placeholder="PV da Venda" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase">
+                <textarea id="edit-pv-produto" rows="2" placeholder="Produto(s)" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase"></textarea>
+                <input type="date" id="edit-pv-data-compra" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                <input type="date" id="edit-pv-previsao-entrega" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                <div class="flex items-center gap-4"><input type="checkbox" id="edit-pv-precisa-montagem" class="h-4 w-4 rounded"><label for="edit-pv-precisa-montagem">Precisa de Montagem?</label></div>
+                <div id="edit-pv-montagem-container" class="hidden"><input type="date" id="edit-pv-previsao-montagem" class="w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                <select id="edit-pv-status" class="w-full px-3 py-2 border border-gray-300 rounded-md"><option>Aguardando Entrega</option><option>Aguardando Montagem</option><option>Concluído</option></select>
+                <!-- Novo Campo de Observações -->
+                <textarea id="edit-pv-observacoes" rows="3" placeholder="Observações Adicionais..." class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase"></textarea>
+                <div class="flex justify-end gap-4 mt-2">
+                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg">Salvar Alterações</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Add SAC Modal -->
+    <!-- Modal Adicionar SAC -->
     <div id="add-sac-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
             <h2 class="text-2xl font-semibold text-zenir-blue mb-4 border-b pb-2">Registrar Nova Ocorrência</h2>
-            <form id="add-sac-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div>
-                    <label for="sac-nome" class="block text-sm font-medium text-gray-700 mb-1">Nome do Cliente</label>
-                    <input type="text" id="sac-nome" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                <div>
-                    <label for="sac-contato" class="block text-sm font-medium text-gray-700 mb-1">Contato</label>
-                    <input type="text" id="sac-contato" placeholder="(XX) X XXXX-XXXX" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
-                </div>
-                <div>
-                    <label for="sac-pv" class="block text-sm font-medium text-gray-700 mb-1">PV da Venda</label>
-                    <input type="text" id="sac-pv" placeholder="PV-000000000-00" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                <div>
-                    <label for="sac-data" class="block text-sm font-medium text-gray-700 mb-1">Data da Ocorrência</label>
-                    <input type="date" id="sac-data" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="sac-tipo" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Ocorrência</label>
-                     <select id="sac-tipo" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                        <option>Entrega</option>
-                        <option>Montagem</option>
-                        <option>Assistência Técnica</option>
-                        <option>Outros</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2">
-                    <label for="sac-descricao" class="block text-sm font-medium text-gray-700 mb-1">Descrição do Problema</label>
-                    <textarea id="sac-descricao" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
-                </div>
-                <div class="md:col-span-full">
-                    <label for="sac-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                     <select id="sac-status" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                        <option>Aberta</option>
-                        <option>Em Análise</option>
-                        <option>Resolvida</option>
-                    </select>
-                </div>
-                <div class="md:col-span-full flex justify-end gap-4 mt-2">
-                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
-                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar</button>
+            <form id="add-sac-form" class="space-y-4">
+                 <input type="text" id="sac-nome" placeholder="Nome do Cliente" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase">
+                <input type="text" id="sac-contato" placeholder="Contato" required class="w-full px-3 py-2 border border-gray-300 rounded-md" maxlength="16">
+                <input type="text" id="sac-pv" placeholder="PV da Venda" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase">
+                <input type="date" id="sac-data" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                <select id="sac-tipo" required class="w-full px-3 py-2 border border-gray-300 rounded-md"><option>Entrega</option><option>Montagem</option><option>Assistência Técnica</option><option>Outros</option></select>
+                <textarea id="sac-descricao" rows="3" placeholder="Descrição do Problema" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase"></textarea>
+                <select id="sac-status" class="w-full px-3 py-2 border border-gray-300 rounded-md"><option>Aberta</option><option>Em Análise</option><option>Resolvida</option></select>
+                <!-- Novo Campo de Observações -->
+                <textarea id="sac-observacoes" rows="3" placeholder="Observações Adicionais..." class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase"></textarea>
+                <div class="flex justify-end gap-4 mt-2">
+                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg">Salvar</button>
                 </div>
             </form>
         </div>
     </div>
-
-    <!-- Edit SAC Modal -->
+    <!-- Modal Editar SAC -->
      <div id="edit-sac-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
             <h2 class="text-2xl font-semibold text-zenir-blue mb-4 border-b pb-2">Editar Ocorrência</h2>
-            <form id="edit-sac-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form id="edit-sac-form" class="space-y-4">
                 <input type="hidden" id="edit-sac-id">
-                <div>
-                    <label for="edit-sac-nome" class="block text-sm font-medium text-gray-700 mb-1">Nome do Cliente</label>
-                    <input type="text" id="edit-sac-nome" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                <div>
-                    <label for="edit-sac-contato" class="block text-sm font-medium text-gray-700 mb-1">Contato</label>
-                    <input type="text" id="edit-sac-contato" placeholder="(XX) X XXXX-XXXX" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" maxlength="16">
-                </div>
-                <div>
-                    <label for="edit-sac-pv" class="block text-sm font-medium text-gray-700 mb-1">PV da Venda</label>
-                    <input type="text" id="edit-sac-pv" placeholder="PV-000000000-00" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                <div>
-                    <label for="edit-sac-data" class="block text-sm font-medium text-gray-700 mb-1">Data da Ocorrência</label>
-                    <input type="date" id="edit-sac-data" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="edit-sac-tipo" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Ocorrência</label>
-                     <select id="edit-sac-tipo" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                        <option>Entrega</option>
-                        <option>Montagem</option>
-                        <option>Assistência Técnica</option>
-                        <option>Outros</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2">
-                    <label for="edit-sac-descricao" class="block text-sm font-medium text-gray-700 mb-1">Descrição do Problema</label>
-                    <textarea id="edit-sac-descricao" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
-                </div>
-                <div class="md:col-span-full">
-                    <label for="edit-sac-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                     <select id="edit-sac-status" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                        <option>Aberta</option>
-                        <option>Em Análise</option>
-                        <option>Resolvida</option>
-                    </select>
-                </div>
-                <div class="md:col-span-full flex justify-end gap-4 mt-2">
-                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
-                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar Alterações</button>
+                <input type="text" id="edit-sac-nome" placeholder="Nome do Cliente" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase">
+                <input type="text" id="edit-sac-contato" placeholder="Contato" required class="w-full px-3 py-2 border border-gray-300 rounded-md" maxlength="16">
+                <input type="text" id="edit-sac-pv" placeholder="PV da Venda" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase">
+                <input type="date" id="edit-sac-data" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                <select id="edit-sac-tipo" required class="w-full px-3 py-2 border border-gray-300 rounded-md"><option>Entrega</option><option>Montagem</option><option>Assistência Técnica</option><option>Outros</option></select>
+                <textarea id="edit-sac-descricao" rows="3" placeholder="Descrição do Problema" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase"></textarea>
+                <select id="edit-sac-status" class="w-full px-3 py-2 border border-gray-300 rounded-md"><option>Aberta</option><option>Em Análise</option><option>Resolvida</option></select>
+                <!-- Novo Campo de Observações -->
+                <textarea id="edit-sac-observacoes" rows="3" placeholder="Observações Adicionais..." class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase"></textarea>
+                <div class="flex justify-end gap-4 mt-2">
+                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg">Salvar Alterações</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Outros Modais (Delete, Edit User) -->
     <div id="delete-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-sm modal-content text-center">
             <i class="fas fa-exclamation-triangle text-4xl text-yellow-500 mb-4"></i>
@@ -531,52 +360,49 @@
             </div>
         </div>
     </div>
-
-    <!-- Edit User Modal -->
     <div id="edit-user-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg modal-content max-h-[90vh] overflow-y-auto">
             <h2 class="text-2xl font-semibold text-zenir-blue mb-4 border-b pb-2">Editar Usuário</h2>
             <form id="edit-user-form" class="space-y-4">
                 <input type="hidden" id="edit-user-id">
-                <div>
-                    <label for="edit-user-name" class="block text-sm font-medium text-gray-700">Nome Completo</label>
-                    <input type="text" id="edit-user-name" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                 <div>
-                    <label for="edit-user-preferred-name" class="block text-sm font-medium text-gray-700">Como gostaria de ser chamado</label>
-                    <input type="text" id="edit-user-preferred-name" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
-                <div>
-                    <label for="edit-user-phone" class="block text-sm font-medium text-gray-700">Telefone</label>
-                    <input type="tel" id="edit-user-phone" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue">
-                </div>
-                <div>
-                    <label for="edit-user-filial" class="block text-sm font-medium text-gray-700">Filial</label>
-                    <input type="text" id="edit-user-filial" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase">
-                </div>
+                <input type="text" id="edit-user-name" placeholder="Nome Completo" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase">
+                <input type="text" id="edit-user-preferred-name" placeholder="Como gostaria de ser chamado" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase">
+                <input type="tel" id="edit-user-phone" placeholder="Telefone" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                <input type="text" id="edit-user-filial" placeholder="Filial" required class="w-full px-3 py-2 border border-gray-300 rounded-md" style="text-transform:uppercase">
                 <div class="flex justify-end gap-4 pt-4">
-                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
-                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar</button>
+                    <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                    <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg">Salvar</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Firebase e Lógica Principal -->
-    <script type="module" src="app.js"></script>
+    <!-- NOVO Modal de Detalhes -->
+    <div id="details-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl modal-content max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-2 mb-4">
+                <h2 id="details-modal-title" class="text-2xl font-semibold text-zenir-blue"></h2>
+                <button class="cancel-btn text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            <div id="details-modal-content" class="space-y-3 text-gray-700">
+                <!-- Conteúdo dinâmico será inserido aqui -->
+            </div>
+            <div class="text-right mt-6">
+                 <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-colors">Fechar</button>
+            </div>
+        </div>
+    </div>
 
-    <!-- Service Worker Registration -->
+    <script type="module" src="app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(registration => {
-                        console.log('Service Worker registrado com sucesso:', registration);
-                    })
-                    .catch(error => {
-                        console.log('Falha ao registrar o Service Worker:', error);
-                    });
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').then(registration => {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            }, err => {
+              console.log('ServiceWorker registration failed: ', err);
             });
+          });
         }
     </script>
 </body>
