@@ -359,7 +359,7 @@ const appManager = {
                 const card = document.createElement('div');
                 card.className = 'bg-white p-5 rounded-lg shadow-md flex flex-col justify-between gap-4 fade-in';
                 card.dataset.id = lead.id;
-                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${lead.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${statusText}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${lead.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">Interesse:</strong> <span class="font-normal">${lead.produto}</span></p><p><strong class="font-semibold text-gray-700">Objeção:</strong> <span class="font-normal">${lead.motivo || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Proposta:</strong> <span class="font-normal">${lead.proposta || 'N/A'}</span></p></div></div><div class="border-t pt-3 flex justify-between items-center"><div class="text-sm"><span class="font-semibold text-gray-700">Retornar em:</span><p class="font-bold ${isFinal ? 'text-gray-400 line-through' : 'text-zenir-red'}">${formatDate(lead.proximoContato)}</p></div><div class="flex gap-3">${whatsappBtn}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div></div>`;
+                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${lead.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${statusText}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${lead.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">Interesse:</strong> <span class="font-normal">${lead.produto}</span></p><p><strong class="font-semibold text-gray-700">Objeção:</strong> <span class="font-normal">${lead.motivo || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Proposta:</strong> <span class="font-normal">${lead.proposta || 'N/A'}</span></p>${lead.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${lead.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-between items-center"><div class="text-sm"><span class="font-semibold text-gray-700">Retornar em:</span><p class="font-bold ${isFinal ? 'text-gray-400 line-through' : 'text-zenir-red'}">${formatDate(lead.proximoContato)}</p></div><div class="flex gap-3">${whatsappBtn}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div></div>`;
                 this.ui.list.appendChild(card);
             });
             this.renderPagination(leadsToRender.length);
@@ -403,6 +403,7 @@ const appManager = {
                 proximoContato: form.elements[type === 'add' ? 'proximo-contato' : 'edit-proximo-contato'].value,
                 estagioContato: form.elements[type === 'add' ? 'estagio-contato' : 'edit-estagio-contato'].value,
                 statusFinal: type === 'add' ? 'Em Andamento' : form.elements['edit-status-final'].value,
+                observacao: form.elements[type === 'add' ? 'observacao' : 'edit-observacao'].value.toUpperCase(),
                 dataUltimaAlteracao: getYYYYMMDD(),
                 userId: this.state.currentUser.uid,
             };
@@ -432,6 +433,7 @@ const appManager = {
             f['edit-lead-id'].value = data.id; f['edit-nome'].value = data.nome; f['edit-contato'].value = data.contato; f['edit-produto'].value = data.produto;
             f['edit-motivo'].value = data.motivo; f['edit-proposta'].value = data.proposta; f['edit-proximo-contato'].value = data.proximoContato;
             f['edit-estagio-contato'].value = data.estagioContato; f['edit-status-final'].value = data.statusFinal;
+            f['edit-observacao'].value = data.observacao || '';
             const isFinal = data.statusFinal !== 'Em Andamento';
             f['edit-estagio-contato'].disabled = isFinal; f['edit-proximo-contato'].disabled = isFinal;
             this.ui.editModal.classList.remove('hidden');
@@ -544,7 +546,7 @@ const appManager = {
                 card.dataset.id = item.id;
                 const statusColor = this.colors[item.status] || 'bg-gray-100 text-gray-800';
                 const whatsappButton = `<button data-action="whatsapp" class="text-green-500 hover:opacity-75"><i class="fab fa-whatsapp fa-lg"></i></button>`;
-                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Produto:</strong> ${item.produto}</p><p><strong class="font-semibold text-gray-700">Entrega:</strong> <span class="font-bold text-zenir-red">${formatDate(item.previsaoEntrega)}</span></p>${item.precisaMontagem && item.previsaoMontagem ? `<p><strong class="font-semibold">Montagem:</strong> <span class="font-bold text-zenir-blue">${formatDate(item.previsaoMontagem)}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-end items-center gap-3">${whatsappButton}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div>`;
+                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Produto:</strong> ${item.produto}</p><p><strong class="font-semibold text-gray-700">Entrega:</strong> <span class="font-bold text-zenir-red">${formatDate(item.previsaoEntrega)}</span></p>${item.precisaMontagem && item.previsaoMontagem ? `<p><strong class="font-semibold">Montagem:</strong> <span class="font-bold text-zenir-blue">${formatDate(item.previsaoMontagem)}</span></p>` : ''}${item.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${item.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-end items-center gap-3">${whatsappButton}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div>`;
                 this.ui.list.appendChild(card);
             });
             this.renderPagination(pvToRender.length);
@@ -574,6 +576,7 @@ const appManager = {
                 precisaMontagem: precisaMontagem,
                 previsaoMontagem: precisaMontagem ? form.elements[`${idPrefix}previsao-montagem`].value : '',
                 status: form.elements[`${idPrefix}status`].value,
+                observacao: form.elements[`${idPrefix}observacao`].value.toUpperCase(),
                 userId: this.state.currentUser.uid
             };
             if (type === 'add') { await addDoc(collection(db, 'pos_venda'), data); } 
@@ -602,6 +605,7 @@ const appManager = {
             f['edit-pv-id'].value = data.id; f['edit-pv-nome'].value = data.nome; f['edit-pv-contato'].value = data.contato;
             f['edit-pv-pv'].value = data.pv; f['edit-pv-produto'].value = data.produto; f['edit-pv-data-compra'].value = data.dataCompra; f['edit-pv-previsao-entrega'].value = data.previsaoEntrega;
             f['edit-pv-status'].value = data.status; f['edit-pv-precisa-montagem'].checked = data.precisaMontagem;
+            f['edit-pv-observacao'].value = data.observacao || '';
             const montagemContainer = f.querySelector('#edit-pv-montagem-container');
             montagemContainer.classList.toggle('hidden', !data.precisaMontagem);
             if(data.precisaMontagem) { f['edit-pv-previsao-montagem'].value = data.previsaoMontagem; }
@@ -720,7 +724,7 @@ const appManager = {
                 card.className = 'bg-white p-5 rounded-lg shadow-md flex flex-col justify-between gap-4 fade-in';
                 card.dataset.id = item.id;
                 const statusColor = this.colors[item.status] || 'bg-gray-100 text-gray-800';
-                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Tipo:</strong> ${item.tipo}</p><p><strong class="font-semibold text-gray-700">Descrição:</strong> ${item.descricao}</p></div></div><div class="border-t pt-3 flex justify-between items-center"><div class="text-sm text-gray-500">Data: ${formatDate(item.data)}</div><div class="flex gap-3"><button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div></div>`;
+                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Tipo:</strong> ${item.tipo}</p><p><strong class="font-semibold text-gray-700">Descrição:</strong> ${item.descricao}</p>${item.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${item.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-between items-center"><div class="text-sm text-gray-500">Data: ${formatDate(item.data)}</div><div class="flex gap-3"><button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div></div>`;
                 this.ui.list.appendChild(card);
             });
             this.renderPagination(itemsToRender.length);
@@ -747,6 +751,7 @@ const appManager = {
                 tipo: form.elements[`${idPrefix}tipo`].value,
                 descricao: form.elements[`${idPrefix}descricao`].value.toUpperCase(),
                 status: form.elements[`${idPrefix}status`].value,
+                observacao: form.elements[`${idPrefix}observacao`].value.toUpperCase(),
                 userId: this.state.currentUser.uid,
             };
             if (type === 'add') { await addDoc(collection(db, 'sac_occurrences'), data); } 
@@ -769,6 +774,7 @@ const appManager = {
             f['edit-sac-id'].value = data.id; f['edit-sac-nome'].value = data.nome; f['edit-sac-contato'].value = data.contato;
             f['edit-sac-pv'].value = data.pv; f['edit-sac-data'].value = data.data; f['edit-sac-tipo'].value = data.tipo;
             f['edit-sac-descricao'].value = data.descricao; f['edit-sac-status'].value = data.status;
+            f['edit-sac-observacao'].value = data.observacao || '';
             this.ui.editModal.classList.remove('hidden');
             appManager.uiManager.body.classList.add('modal-open');
         },
@@ -971,4 +977,3 @@ const appManager = {
 
 // --- INICIALIZAÇÃO ---
 appManager.authManager.init();
-
