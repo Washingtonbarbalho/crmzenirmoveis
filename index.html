@@ -250,6 +250,10 @@
                     <label for="proposta" class="block text-sm font-medium text-gray-700 mb-1">Proposta Apresentada</label>
                     <textarea id="proposta" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
                 </div>
+                <div class="md:col-span-full">
+                    <label for="observacao" class="block text-sm font-medium text-gray-700 mb-1">Observação</label>
+                    <textarea id="observacao" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                </div>
                 <div class="md:col-span-full flex justify-end gap-4 mt-2">
                     <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
                     <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar Lead</button>
@@ -305,6 +309,10 @@
                     <label for="edit-proposta" class="block text-sm font-medium text-gray-700">Proposta</label>
                     <textarea id="edit-proposta" rows="2" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
                 </div>
+                <div class="md:col-span-2">
+                    <label for="edit-observacao" class="block text-sm font-medium text-gray-700">Observação</label>
+                    <textarea id="edit-observacao" rows="2" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                </div>
                 <div class="md:col-span-2 flex justify-end gap-4">
                     <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
                     <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-800 transition-colors">Salvar</button>
@@ -357,6 +365,10 @@
                         <option>Aguardando Montagem</option>
                         <option>Concluído</option>
                     </select>
+                </div>
+                <div class="md:col-span-full">
+                    <label for="pv-observacao" class="block text-sm font-medium text-gray-700 mb-1">Observação</label>
+                    <textarea id="pv-observacao" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
                 </div>
                 <div class="md:col-span-full flex justify-end gap-4 mt-2">
                     <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
@@ -412,6 +424,10 @@
                         <option>Concluído</option>
                     </select>
                 </div>
+                <div class="md:col-span-full">
+                    <label for="edit-pv-observacao" class="block text-sm font-medium text-gray-700 mb-1">Observação</label>
+                    <textarea id="edit-pv-observacao" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
+                </div>
                 <div class="md:col-span-full flex justify-end gap-4 mt-2">
                     <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
                     <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar Alterações</button>
@@ -461,6 +477,10 @@
                         <option>Em Análise</option>
                         <option>Resolvida</option>
                     </select>
+                </div>
+                <div class="md:col-span-full">
+                    <label for="sac-observacao" class="block text-sm font-medium text-gray-700 mb-1">Observação</label>
+                    <textarea id="sac-observacao" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
                 </div>
                 <div class="md:col-span-full flex justify-end gap-4 mt-2">
                     <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
@@ -512,6 +532,10 @@
                         <option>Em Análise</option>
                         <option>Resolvida</option>
                     </select>
+                </div>
+                <div class="md:col-span-full">
+                    <label for="edit-sac-observacao" class="block text-sm font-medium text-gray-700 mb-1">Observação</label>
+                    <textarea id="edit-sac-observacao" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-zenir-blue focus:border-zenir-blue" style="text-transform:uppercase"></textarea>
                 </div>
                 <div class="md:col-span-full flex justify-end gap-4 mt-2">
                     <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
@@ -571,7 +595,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
+                navigator.serviceWorker.register('./service-worker.js')
                     .then(registration => {
                         console.log('Service Worker registrado com sucesso:', registration);
                     })
@@ -583,4 +607,3 @@
     </script>
 </body>
 </html>
-
