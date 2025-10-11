@@ -2,8 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, query, where, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// ATENÇÃO: Mantenha suas chaves do Firebase seguras.
-// Para um projeto profissional, considere usar variáveis de ambiente.
 const firebaseConfig = {
     apiKey: "AIzaSyB2lylkLmSLkO55rcX7FVQh3UBPEL9Vc58",
     authDomain: "crm-zenir-moveis.firebaseapp.com",
@@ -18,19 +16,13 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // --- FUNÇÕES UTILITÁRIAS ---
-const getFortalezaDate = () => new Date();
 const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const [year, month, day] = dateString.split('-');
     return `${day}/${month}/${year}`;
 };
 const getYYYYMMDD = (date = new Date()) => {
-    return new Intl.DateTimeFormat('en-CA', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        timeZone: 'America/Fortaleza'
-    }).format(date);
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Fortaleza' }).format(date);
 };
 const maskPhone = (event) => {
     let value = event.target.value.replace(/\D/g, '').slice(0, 11);
@@ -38,8 +30,7 @@ const maskPhone = (event) => {
     event.target.value = value;
 };
  const maskPV = (event) => {
-    let value = event.target.value.replace(/[^0-9]/g, '');
-    value = value.slice(0, 11);
+    let value = event.target.value.replace(/[^0-9]/g, '').slice(0, 11);
     if (value.length > 9) { value = `PV-${value.slice(0,9)}-${value.slice(9)}`; } 
     else if (value.length > 0) { value = `PV-${value}`; }
     event.target.value = value.toUpperCase();
@@ -57,6 +48,7 @@ const appManager = {
         pageTitle: document.getElementById('page-title'),
         loadingSpinner: document.getElementById('loading-spinner'),
         userDisplayName: document.getElementById('user-display-name'),
+        userDisplayNameMobile: document.getElementById('user-display-name-mobile'),
         init() {
             this.menuButton.addEventListener('click', () => {
                  this.sidebar.classList.toggle('open'); this.overlay.classList.toggle('hidden');
@@ -78,13 +70,32 @@ const appManager = {
             const titles = { leads: 'Gerenciamento de Leads', 'pos-venda': 'Gerenciamento Pós-venda', sac: 'Gerenciamento SAC', users: 'Gerenciamento de Usuários' };
             this.pageTitle.textContent = titles[pageId] || 'CRM Zenir';
             document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('bg-zenir-blue-dark', l.dataset.page === pageId));
-            localStorage.setItem('lastVisitedPage', pageId); // Salva a página atual
+            localStorage.setItem('lastVisitedPage', pageId);
             this.sidebar.classList.remove('open');
             this.overlay.classList.add('hidden');
-            this.body.classList.remove('modal-open');
         },
         showLoading(show) {
             this.loadingSpinner.style.display = show ? 'flex' : 'none';
+        }
+    },
+    
+    detailsModalManager: {
+        modal: document.getElementById('details-modal'),
+        title: document.getElementById('details-modal-title'),
+        content: document.getElementById('details-modal-content'),
+        show(title, detailsArray) {
+            this.title.textContent = title;
+            this.content.innerHTML = '';
+            detailsArray.forEach(item => {
+                const p = document.createElement('p');
+                p.innerHTML = `<strong class="font-semibold text-gray-800">${item.label}:</strong> <span class="text-gray-600">${item.value || 'N/A'}</span>`;
+                if (item.full) {
+                    p.querySelector('span').classList.add('whitespace-pre-wrap', 'break-words');
+                }
+                this.content.appendChild(p);
+            });
+            this.modal.classList.remove('hidden');
+            appManager.uiManager.body.classList.add('modal-open');
         }
     },
 
@@ -207,16 +218,16 @@ const appManager = {
         listenForAuthState() {
              onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    const userDocRef = doc(db, 'users', user.uid);
-                    const userDocSnap = await getDoc(userDocRef);
-
+                    const userDocSnap = await getDoc(doc(db, 'users', user.uid));
                     if (userDocSnap.exists()) {
                         const userData = userDocSnap.data();
                         if (userData.status === 'Aprovado') {
                             this.authContainer.style.display = 'none';
                             this.appContent.style.display = 'flex';
                             
-                            appManager.uiManager.userDisplayName.textContent = `Olá, ${userData.preferredName || userData.name.split(' ')[0]}!`;
+                            const displayName = `Olá, ${userData.preferredName || userData.name.split(' ')[0]}!`;
+                            appManager.uiManager.userDisplayName.textContent = displayName;
+                            appManager.uiManager.userDisplayNameMobile.textContent = displayName;
                             document.getElementById('nav-users-link').classList.toggle('hidden', userData.role !== 'admin');
 
                             appManager.uiManager.init();
@@ -231,12 +242,10 @@ const appManager = {
                                 appManager.uiManager.showPage('leads');
                                 sessionStorage.removeItem('isNewLogin');
                             } else {
-                                const lastPage = localStorage.getItem('lastVisitedPage') || 'leads';
-                                appManager.uiManager.showPage(lastPage);
+                                appManager.uiManager.showPage(localStorage.getItem('lastVisitedPage') || 'leads');
                             }
-
                         } else {
-                            this.loginError.textContent = userData.status === 'Pendente' ? 'Seu cadastro está pendente de aprovação pelo administrador.' : 'Seu acesso foi bloqueado.';
+                            this.loginError.textContent = userData.status === 'Pendente' ? 'Seu cadastro está pendente de aprovação.' : 'Seu acesso foi bloqueado.';
                             this.loginError.classList.remove('hidden');
                             signOut(auth); 
                         }
@@ -261,7 +270,6 @@ const appManager = {
             editModal: document.getElementById('edit-lead-modal'),
             addForm: document.getElementById('add-lead-form'),
             editForm: document.getElementById('edit-lead-form'),
-            openAddBtn: document.getElementById('open-add-lead-modal-btn'),
         },
         colors: {
             final: {'Venda Realizada': 'bg-green-100 text-green-800', 'Não Interessado': 'bg-red-100 text-red-800'},
@@ -269,44 +277,21 @@ const appManager = {
         },
         init(user, userData) { this.state.currentUser = user; this.state.currentUserData = userData; this.attachEventListeners(); this.listenForChanges(); },
         attachEventListeners() {
-            this.ui.openAddBtn.addEventListener('click', () => {
+            document.getElementById('open-add-lead-modal-btn').addEventListener('click', () => {
                 this.ui.addForm.reset();
-                const nextBusinessDay = new Date();
-                nextBusinessDay.setDate(nextBusinessDay.getDate() + 1);
-                if ([6,0].includes(nextBusinessDay.getDay())) {
-                    nextBusinessDay.setDate(nextBusinessDay.getDate() + (nextBusinessDay.getDay() === 6 ? 2 : 1));
-                }
-                this.ui.addForm['data-visita'].value = getYYYYMMDD();
-                this.ui.addForm['proximo-contato'].value = getYYYYMMDD(nextBusinessDay);
                 this.ui.addModal.classList.remove('hidden');
                 appManager.uiManager.body.classList.add('modal-open');
             });
             this.ui.addForm.addEventListener('submit', (e) => this.handleFormSubmit(e, 'add'));
             this.ui.editForm.addEventListener('submit', (e) => this.handleFormSubmit(e, 'edit'));
-            this.ui.addForm.contato.addEventListener('input', maskPhone);
-            this.ui.editForm['edit-contato'].addEventListener('input', maskPhone);
             this.ui.list.addEventListener('click', (e) => this.handleCardClick(e));
-            this.ui.tabsContainer.addEventListener('click', (e) => {
+             this.ui.tabsContainer.addEventListener('click', (e) => {
                 const targetTab = e.target.closest('.tab-leads');
                 if(targetTab) { this.state.filter = targetTab.dataset.filter; this.state.currentPage = 1; this.filterAndRender(); }
             });
              this.ui.pagination.addEventListener('click', (e) => {
                 const button = e.target.closest('button');
                 if (button && button.dataset.page) { this.state.currentPage = parseInt(button.dataset.page); this.filterAndRender(); }
-            });
-            this.ui.editForm['edit-status-final'].addEventListener('change', (e) => {
-                 const isFinal = e.target.value !== 'Em Andamento';
-                 this.ui.editForm['edit-estagio-contato'].disabled = isFinal;
-                 this.ui.editForm['edit-proximo-contato'].disabled = isFinal;
-            });
-            this.ui.editForm['edit-estagio-contato'].addEventListener('change', (e) => {
-                const daysMap = {'Contato 2': 5, 'Contato 3': 10, 'Contato 4': 10};
-                const nextDate = new Date();
-                nextDate.setDate(nextDate.getDate() + (daysMap[e.target.value] || 1));
-                 if ([6,0].includes(nextDate.getDay())) {
-                    nextDate.setDate(nextDate.getDate() + (nextDate.getDay() === 6 ? 2 : 1));
-                }
-                this.ui.editForm['edit-proximo-contato'].value = getYYYYMMDD(nextDate);
             });
         },
         listenForChanges() {
@@ -317,82 +302,89 @@ const appManager = {
             });
         },
         filterAndRender() {
-            let filtered = this.state.all;
-
-            // 1. Filtrar com base na aba selecionada
+            let filtered = [...this.state.all];
             if (this.state.filter !== 'Visão Geral') {
                 filtered = this.state.all.filter(l => l.statusFinal === this.state.filter);
             }
-
-            // 2. Aplicar a organização (sort)
             const statusPriority = { 'Em Andamento': 1, 'Venda Realizada': 2, 'Não Interessado': 3 };
-
             filtered.sort((a, b) => {
-                // Lógica para a aba "Visão Geral"
                 if (this.state.filter === 'Visão Geral') {
                     const priorityA = statusPriority[a.statusFinal] || 4;
                     const priorityB = statusPriority[b.statusFinal] || 4;
-                    // Primeiro, agrupa por status
-                    if (priorityA !== priorityB) {
-                        return priorityA - priorityB;
-                    }
+                    if (priorityA !== priorityB) return priorityA - priorityB;
                 }
-                // Para todos os casos (dentro dos grupos ou em outras abas), organiza por data de retorno
-                const dateA = a.proximoContato || '9999-12-31';
-                const dateB = b.proximoContato || '9999-12-31';
-                return dateA.localeCompare(dateB);
+                return (a.proximoContato || '9999-12-31').localeCompare(b.proximoContato || '9999-12-31');
             });
-            
             this.render(filtered);
             this.updateTabCounts();
             this.updateTabStyles();
         },
         render(leadsToRender) {
-            this.ui.list.innerHTML = ''; this.ui.pagination.innerHTML = '';
+            this.ui.list.innerHTML = ''; 
             if (leadsToRender.length === 0) { this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhum lead encontrado.</p>`; return; }
             const paginatedItems = leadsToRender.slice((this.state.currentPage - 1) * this.state.itemsPerPage, this.state.currentPage * this.state.itemsPerPage);
             paginatedItems.forEach(lead => {
-                const isFinal = lead.statusFinal !== 'Em Andamento';
-                const statusText = isFinal ? lead.statusFinal : lead.estagioContato;
-                const statusColor = isFinal ? this.colors.final[statusText] : this.colors.estagio[statusText];
-                const whatsappBtn = !isFinal ? `<button data-action="whatsapp" class="text-green-500 hover:opacity-75"><i class="fab fa-whatsapp fa-lg"></i></button>` : '';
                 const card = document.createElement('div');
                 card.className = 'bg-white p-5 rounded-lg shadow-md flex flex-col justify-between gap-4 fade-in';
                 card.dataset.id = lead.id;
-                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${lead.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${statusText}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${lead.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">Interesse:</strong> <span class="font-normal">${lead.produto}</span></p><p><strong class="font-semibold text-gray-700">Objeção:</strong> <span class="font-normal">${lead.motivo || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Proposta:</strong> <span class="font-normal">${lead.proposta || 'N/A'}</span></p></div></div><div class="border-t pt-3 flex justify-between items-center"><div class="text-sm"><span class="font-semibold text-gray-700">Retornar em:</span><p class="font-bold ${isFinal ? 'text-gray-400 line-through' : 'text-zenir-red'}">${formatDate(lead.proximoContato)}</p></div><div class="flex gap-3">${whatsappBtn}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div></div>`;
+                const statusColor = lead.statusFinal !== 'Em Andamento' ? this.colors.final[lead.statusFinal] : this.colors.estagio[lead.estagioContato];
+                const statusText = lead.statusFinal !== 'Em Andamento' ? lead.statusFinal : lead.estagioContato;
+                const obsSnippet = lead.observacoes ? `<p class="text-sm text-gray-500 italic truncate mt-2"><strong class="font-semibold not-italic">Obs:</strong> ${lead.observacoes}</p>` : '';
+                
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-xl font-bold text-gray-800">${lead.nome}</h3>
+                            <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${statusText}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${lead.contato}</p>
+                        <div class="bg-gray-50 p-3 rounded-md text-sm space-y-1">
+                           <p><strong class="font-semibold text-gray-700">Interesse:</strong> <span class="font-normal">${lead.produto}</span></p>
+                           <p><strong class="font-semibold text-gray-700">Proposta:</strong> <span class="font-normal truncate">${lead.proposta || 'N/A'}</span></p>
+                        </div>
+                        ${obsSnippet}
+                    </div>
+                    <div class="border-t pt-3 flex justify-between items-center">
+                        <div class="text-sm">
+                            <span class="font-semibold text-gray-700">Retornar em:</span>
+                            <p class="font-bold ${lead.statusFinal !== 'Em Andamento' ? 'text-gray-400 line-through' : 'text-zenir-red'}">${formatDate(lead.proximoContato)}</p>
+                        </div>
+                        <div class="flex gap-3 items-center">
+                            <button data-action="view" class="text-gray-500 hover:text-zenir-blue"><i class="fas fa-eye fa-lg"></i></button>
+                            <button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button>
+                            <button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button>
+                        </div>
+                    </div>`;
                 this.ui.list.appendChild(card);
             });
             this.renderPagination(leadsToRender.length);
         },
         renderPagination(totalItems) {
             const totalPages = Math.ceil(totalItems / this.state.itemsPerPage);
+            this.ui.pagination.innerHTML = '';
             if (totalPages <= 1) return;
-            let paginationHTML = '';
-            paginationHTML += `<button data-page="${this.state.currentPage - 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === 1 ? 'disabled' : ''}>Anterior</button>`;
-            for (let i = 1; i <= totalPages; i++) { paginationHTML += `<button data-page="${i}" class="px-3 py-1 rounded-md ${this.state.currentPage === i ? 'bg-zenir-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}">${i}</button>`; }
-            paginationHTML += `<button data-page="${this.state.currentPage + 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === totalPages ? 'disabled' : ''}>Próximo</button>`;
-            this.ui.pagination.innerHTML = paginationHTML;
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.dataset.page = i;
+                button.className = `px-3 py-1 rounded-md ${this.state.currentPage === i ? 'bg-zenir-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`;
+                button.textContent = i;
+                this.ui.pagination.appendChild(button);
+            }
         },
         updateTabCounts() {
             const counts = { 'Visão Geral': this.state.all.length, 'Em Andamento': this.state.all.filter(l => l.statusFinal === 'Em Andamento').length, 'Venda Realizada': this.state.all.filter(l => l.statusFinal === 'Venda Realizada').length, 'Não Interessado': this.state.all.filter(l => l.statusFinal === 'Não Interessado').length };
-            this.ui.tabsContainer.innerHTML = Object.keys(counts).map(filter => `<button data-filter="${filter}" class="tab-leads whitespace-nowrap py-3 px-3 sm:px-4 border-b-2 font-medium text-sm flex items-center rounded-t-lg transition-colors duration-200"><span class="count-badge mr-2 bg-gray-200 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full">${counts[filter]}</span>${filter}</button>`).join('');
+            this.ui.tabsContainer.innerHTML = Object.keys(counts).map(filter => `<button data-filter="${filter}" class="tab-leads whitespace-nowrap py-3 px-3 sm:px-4 border-b-2 font-medium text-sm flex items-center rounded-t-lg"><span class="count-badge mr-2 bg-gray-200 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full">${counts[filter]}</span>${filter}</button>`).join('');
         },
         updateTabStyles() {
             this.ui.tabsContainer.querySelectorAll('.tab-leads').forEach(tab => {
                 const isActive = tab.dataset.filter === this.state.filter;
                 tab.classList.toggle('border-zenir-blue', isActive); 
                 tab.classList.toggle('text-zenir-blue', isActive);
-                tab.classList.toggle('font-semibold', isActive);
-                tab.classList.toggle('bg-blue-50', isActive);
-                
-                tab.classList.toggle('border-transparent', !isActive); 
-                tab.classList.toggle('text-gray-500', !isActive);
-                tab.classList.toggle('hover:text-zenir-blue', !isActive);
             });
         },
         async handleFormSubmit(event, type) {
             event.preventDefault();
-            const form = type === 'add' ? this.ui.addForm : this.ui.editForm;
+            const form = event.target;
             const modal = type === 'add' ? this.ui.addModal : this.ui.editModal;
             const leadData = {
                 nome: form.elements[type === 'add' ? 'nome' : 'edit-nome'].value.toUpperCase(),
@@ -403,51 +395,55 @@ const appManager = {
                 proximoContato: form.elements[type === 'add' ? 'proximo-contato' : 'edit-proximo-contato'].value,
                 estagioContato: form.elements[type === 'add' ? 'estagio-contato' : 'edit-estagio-contato'].value,
                 statusFinal: type === 'add' ? 'Em Andamento' : form.elements['edit-status-final'].value,
-                dataUltimaAlteracao: getYYYYMMDD(),
+                observacoes: form.elements[type === 'add' ? 'observacoes' : 'edit-observacoes'].value.toUpperCase(),
                 userId: this.state.currentUser.uid,
             };
-            if (type === 'add') { leadData.dataVisita = form.elements['data-visita'].value; await addDoc(collection(db, 'leads'), leadData); } 
-            else { const leadId = form.elements['edit-lead-id'].value; await updateDoc(doc(db, 'leads', leadId), leadData); }
+            if (type === 'add') {
+                leadData.dataVisita = form.elements['data-visita'].value;
+                await addDoc(collection(db, 'leads'), leadData);
+            } else {
+                await updateDoc(doc(db, 'leads', form.elements['edit-lead-id'].value), leadData);
+            }
             modal.classList.add('hidden');
             appManager.uiManager.body.classList.remove('modal-open');
         },
         handleCardClick(event) {
             const button = event.target.closest('button');
             if (!button) return;
-            const card = button.closest('[data-id]');
-            const leadId = card.dataset.id;
-            const leadData = this.state.all.find(l => l.id === leadId);
+            const leadData = this.state.all.find(l => l.id === button.closest('[data-id]').dataset.id);
             switch(button.dataset.action) {
-                case 'delete': this.state.docToDelete = leadId; appManager.deleteModalManager.show(); break;
+                case 'delete': this.state.docToDelete = leadData.id; appManager.deleteModalManager.show(); break;
                 case 'edit': this.populateEditForm(leadData); break;
-                case 'whatsapp':
-                    const message = this.getMessageForStage(leadData.estagioContato, leadData.nome, leadData.produto, this.state.currentUserData.preferredName);
-                    const cleanPhone = '55' + leadData.contato.replace(/\D/g, '');
-                    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+                case 'view':
+                    const details = [
+                        { label: 'Cliente', value: leadData.nome },
+                        { label: 'Contato', value: leadData.contato },
+                        { label: 'Status', value: leadData.statusFinal },
+                        { label: 'Estágio', value: leadData.estagioContato },
+                        { label: 'Próximo Contato', value: formatDate(leadData.proximoContato) },
+                        { label: 'Interesse', value: leadData.produto, full: true },
+                        { label: 'Objeção', value: leadData.motivo, full: true },
+                        { label: 'Proposta', value: leadData.proposta, full: true },
+                        { label: 'Observações', value: leadData.observacoes, full: true }
+                    ];
+                    appManager.detailsModalManager.show('Detalhes do Lead', details);
                     break;
             }
         },
         populateEditForm(data) {
             const f = this.ui.editForm;
-            f['edit-lead-id'].value = data.id; f['edit-nome'].value = data.nome; f['edit-contato'].value = data.contato; f['edit-produto'].value = data.produto;
-            f['edit-motivo'].value = data.motivo; f['edit-proposta'].value = data.proposta; f['edit-proximo-contato'].value = data.proximoContato;
-            f['edit-estagio-contato'].value = data.estagioContato; f['edit-status-final'].value = data.statusFinal;
-            const isFinal = data.statusFinal !== 'Em Andamento';
-            f['edit-estagio-contato'].disabled = isFinal; f['edit-proximo-contato'].disabled = isFinal;
+            f['edit-lead-id'].value = data.id;
+            f['edit-nome'].value = data.nome;
+            f['edit-contato'].value = data.contato;
+            f['edit-produto'].value = data.produto;
+            f['edit-motivo'].value = data.motivo;
+            f['edit-proposta'].value = data.proposta;
+            f['edit-proximo-contato'].value = data.proximoContato;
+            f['edit-estagio-contato'].value = data.estagioContato;
+            f['edit-status-final'].value = data.statusFinal;
+            f['edit-observacoes'].value = data.observacoes || '';
             this.ui.editModal.classList.remove('hidden');
-            appManager.uiManager.body.classList.add('modal-open');
         },
-        getMessageForStage(stage, clientName, productName, salesPersonName) {
-            const nomeCliente = clientName.split(' ')[0];
-            const salesPersonTitle = `${salesPersonName}, Vendedor(a) da Zenir Móveis`;
-            const messages = {
-                'Contato 1': `Olá, ${nomeCliente}! Tudo bem? 😊 Sou ${salesPersonTitle}, e lembrei do seu interesse no produto *${productName}*. Ficou alguma dúvida que eu possa te ajudar a esclarecer? Estou aqui para isso!`,
-                'Contato 2': `Oi, ${nomeCliente}! Sou ${salesPersonTitle}, e estou passando para saber se você já tomou uma decisão sobre o *${productName}*. Muitas pessoas têm procurado por ele, e eu não gostaria que você perdesse a oportunidade. Posso ajudar em algo mais?`,
-                'Contato 3': `Olá, ${nomeCliente}! Como vai? Aqui é ${salesPersonTitle}. Notei que ainda não conversamos sobre o *${productName}*. Aconteceu algo ou a proposta não era bem o que você esperava? Seu feedback é super importante para mim!`,
-                'Contato 4': `Olá, ${nomeCliente}! Aqui é ${salesPersonTitle}, com uma novidade exclusiva para você! ✨ Consegui uma condição especial e imperdível para você levar para casa o *${productName}*. É a sua chance! Vamos conversar?`,
-            };
-            return messages[stage] || `Olá ${nomeCliente}!`;
-        }
     },
     
     posVendaManager: {
@@ -460,35 +456,26 @@ const appManager = {
             editModal: document.getElementById('edit-pos-venda-modal'),
             addForm: document.getElementById('add-pos-venda-form'),
             editForm: document.getElementById('edit-pos-venda-form'),
-            openAddBtn: document.getElementById('open-add-pos-venda-modal-btn'),
         },
         colors: {'Aguardando Entrega': 'bg-yellow-100 text-yellow-800', 'Aguardando Montagem': 'bg-blue-100 text-blue-800', 'Concluído': 'bg-green-100 text-green-800'},
         init(user, userData) { this.state.currentUser = user; this.state.currentUserData = userData; this.attachEventListeners(); this.listenForChanges(); },
         attachEventListeners() {
-            this.ui.openAddBtn.addEventListener('click', () => {
+            document.getElementById('open-add-pos-venda-modal-btn').addEventListener('click', () => {
                 this.ui.addForm.reset();
-                this.ui.addForm.querySelector('#pv-montagem-container').classList.add('hidden');
-                this.ui.addForm['pv-data-compra'].value = getYYYYMMDD();
                 this.ui.addModal.classList.remove('hidden');
                 appManager.uiManager.body.classList.add('modal-open');
             });
             this.ui.addForm.addEventListener('submit', (e) => this.handleFormSubmit(e, 'add'));
             this.ui.editForm.addEventListener('submit', (e) => this.handleFormSubmit(e, 'edit'));
-            this.ui.addForm['pv-contato'].addEventListener('input', maskPhone);
-            this.ui.editForm['edit-pv-contato'].addEventListener('input', maskPhone);
-            this.ui.addForm['pv-pv'].addEventListener('input', maskPV);
-            this.ui.editForm['edit-pv-pv'].addEventListener('input', maskPV);
             this.ui.list.addEventListener('click', (e) => this.handleCardClick(e));
-            this.ui.tabsContainer.addEventListener('click', (e) => {
+             this.ui.tabsContainer.addEventListener('click', (e) => {
                 const targetTab = e.target.closest('.tab-pos-venda');
                 if(targetTab) { this.state.filter = targetTab.dataset.filter; this.state.currentPage = 1; this.filterAndRender(); }
             });
-            this.ui.pagination.addEventListener('click', (e) => {
+             this.ui.pagination.addEventListener('click', (e) => {
                 const button = e.target.closest('button');
                 if (button && button.dataset.page) { this.state.currentPage = parseInt(button.dataset.page); this.filterAndRender(); }
             });
-            this.ui.addForm['pv-precisa-montagem'].addEventListener('change', (e) => { this.ui.addForm.querySelector('#pv-montagem-container').classList.toggle('hidden', !e.target.checked); });
-            this.ui.editForm['edit-pv-precisa-montagem'].addEventListener('change', (e) => { this.ui.editForm.querySelector('#edit-pv-montagem-container').classList.toggle('hidden', !e.target.checked); });
         },
         listenForChanges() {
             const q = query(collection(db, 'pos_venda'), where("userId", "==", this.state.currentUser.uid));
@@ -498,69 +485,85 @@ const appManager = {
             });
         },
         filterAndRender() {
-            let filtered = this.state.all;
-
+            let filtered = [...this.state.all];
             if (this.state.filter !== 'Visão Geral') {
                 filtered = this.state.all.filter(pv => pv.status === this.state.filter);
             }
-
             const statusPriority = { 'Aguardando Entrega': 1, 'Aguardando Montagem': 2, 'Concluído': 3 };
-
             filtered.sort((a, b) => {
                 if (this.state.filter === 'Visão Geral') {
-                    const priorityA = statusPriority[a.status] || 4;
+                     const priorityA = statusPriority[a.status] || 4;
                     const priorityB = statusPriority[b.status] || 4;
-                    if (priorityA !== priorityB) {
-                        return priorityA - priorityB;
-                    }
+                    if (priorityA !== priorityB) return priorityA - priorityB;
                 }
-                
                 if (this.state.filter === 'Aguardando Montagem') {
-                    const dateA = a.previsaoMontagem || '9999-12-31';
-                    const dateB = b.previsaoMontagem || '9999-12-31';
-                    return dateA.localeCompare(dateB);
+                    return (a.previsaoMontagem || '9999-12-31').localeCompare(b.previsaoMontagem || '9999-12-31');
                 }
-
-                const dateA = a.previsaoEntrega || '9999-12-31';
-                const dateB = b.previsaoEntrega || '9999-12-31';
-                return dateA.localeCompare(dateB);
+                return (a.previsaoEntrega || '9999-12-31').localeCompare(b.previsaoEntrega || '9999-12-31');
             });
-            
             this.render(filtered);
             this.updateTabCounts();
             this.updateTabStyles();
         },
         render(pvToRender) {
             this.ui.list.innerHTML = '';
-            this.ui.pagination.innerHTML = '';
-             if (pvToRender.length === 0) { this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhum registro encontrado.</p>`; return; }
-            
-            const startIndex = (this.state.currentPage - 1) * this.state.itemsPerPage;
-            const paginatedItems = pvToRender.slice(startIndex, startIndex + this.state.itemsPerPage);
-
+            if (pvToRender.length === 0) { this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhum registro encontrado.</p>`; return; }
+            const paginatedItems = pvToRender.slice((this.state.currentPage - 1) * this.state.itemsPerPage, this.state.currentPage * this.state.itemsPerPage);
             paginatedItems.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'bg-white p-5 rounded-lg shadow-md flex flex-col justify-between gap-4 fade-in';
                 card.dataset.id = item.id;
                 const statusColor = this.colors[item.status] || 'bg-gray-100 text-gray-800';
-                const whatsappButton = `<button data-action="whatsapp" class="text-green-500 hover:opacity-75"><i class="fab fa-whatsapp fa-lg"></i></button>`;
-                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Produto:</strong> ${item.produto}</p><p><strong class="font-semibold text-gray-700">Entrega:</strong> <span class="font-bold text-zenir-red">${formatDate(item.previsaoEntrega)}</span></p>${item.precisaMontagem && item.previsaoMontagem ? `<p><strong class="font-semibold">Montagem:</strong> <span class="font-bold text-zenir-blue">${formatDate(item.previsaoMontagem)}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-end items-center gap-3">${whatsappButton}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div>`;
+                const obsSnippet = item.observacoes ? `<p class="text-sm text-gray-500 italic truncate mt-2"><strong class="font-semibold not-italic">Obs:</strong> ${item.observacoes}</p>` : '';
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-xl font-bold text-gray-800">${item.nome}</h3>
+                            <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3"><i class="fas fa-receipt text-gray-400 mr-2"></i>${item.pv || 'N/A'}</p>
+                        <div class="bg-gray-50 p-3 rounded-md text-sm space-y-1">
+                            <p><strong class="font-semibold text-gray-700">Entrega:</strong> <span class="font-bold text-zenir-red">${formatDate(item.previsaoEntrega)}</span></p>
+                            ${item.precisaMontagem && item.previsaoMontagem ? `<p><strong class="font-semibold">Montagem:</strong> <span class="font-bold text-zenir-blue">${formatDate(item.previsaoMontagem)}</span></p>` : ''}
+                        </div>
+                        ${obsSnippet}
+                    </div>
+                    <div class="border-t pt-3 flex justify-end items-center gap-3">
+                        <button data-action="view" class="text-gray-500 hover:text-zenir-blue"><i class="fas fa-eye fa-lg"></i></button>
+                        <button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button>
+                        <button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button>
+                    </div>`;
                 this.ui.list.appendChild(card);
             });
             this.renderPagination(pvToRender.length);
         },
         renderPagination(totalItems) {
             const totalPages = Math.ceil(totalItems / this.state.itemsPerPage);
+            this.ui.pagination.innerHTML = '';
             if (totalPages <= 1) return;
-            let paginationHTML = '';
-            paginationHTML += `<button data-page="${this.state.currentPage - 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === 1 ? 'disabled' : ''}>Anterior</button>`;
-            for (let i = 1; i <= totalPages; i++) { paginationHTML += `<button data-page="${i}" class="px-3 py-1 rounded-md ${this.state.currentPage === i ? 'bg-zenir-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}">${i}</button>`; }
-            paginationHTML += `<button data-page="${this.state.currentPage + 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === totalPages ? 'disabled' : ''}>Próximo</button>`;
-            this.ui.pagination.innerHTML = paginationHTML;
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.dataset.page = i;
+                button.className = `px-3 py-1 rounded-md ${this.state.currentPage === i ? 'bg-zenir-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`;
+                button.textContent = i;
+                this.ui.pagination.appendChild(button);
+            }
+        },
+        updateTabCounts() {
+            const counts = { 'Visão Geral': this.state.all.length, 'Aguardando Entrega': this.state.all.filter(l => l.status === 'Aguardando Entrega').length, 'Aguardando Montagem': this.state.all.filter(l => l.status === 'Aguardando Montagem').length, 'Concluído': this.state.all.filter(l => l.status === 'Concluído').length };
+            this.ui.tabsContainer.innerHTML = Object.keys(counts).map(filter => `<button data-filter="${filter}" class="tab-pos-venda whitespace-nowrap py-3 px-3 sm:px-4 border-b-2 font-medium text-sm flex items-center rounded-t-lg"><span class="count-badge mr-2 bg-gray-200 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full">${counts[filter]}</span>${filter}</button>`).join('');
+        },
+        updateTabStyles() {
+            this.ui.tabsContainer.querySelectorAll('.tab-pos-venda').forEach(tab => {
+                const isActive = tab.dataset.filter === this.state.filter;
+                tab.classList.toggle('border-zenir-blue', isActive); 
+                tab.classList.toggle('text-zenir-blue', isActive);
+            });
         },
         async handleFormSubmit(event, type) {
             event.preventDefault();
-            const form = type === 'add' ? this.ui.addForm : this.ui.editForm;
+            const form = event.target;
             const modal = type === 'add' ? this.ui.addModal : this.ui.editModal;
             const idPrefix = type === 'add' ? 'pv-' : 'edit-pv-';
             const precisaMontagem = form.elements[`${idPrefix}precisa-montagem`].checked;
@@ -574,71 +577,61 @@ const appManager = {
                 precisaMontagem: precisaMontagem,
                 previsaoMontagem: precisaMontagem ? form.elements[`${idPrefix}previsao-montagem`].value : '',
                 status: form.elements[`${idPrefix}status`].value,
+                observacoes: form.elements[`${idPrefix}observacoes`].value.toUpperCase(),
                 userId: this.state.currentUser.uid
             };
-            if (type === 'add') { await addDoc(collection(db, 'pos_venda'), data); } 
-            else { const docId = form.elements['edit-pv-id'].value; await updateDoc(doc(db, 'pos_venda', docId), data); }
+            if (type === 'add') await addDoc(collection(db, 'pos_venda'), data);
+            else await updateDoc(doc(db, 'pos_venda', form.elements['edit-pv-id'].value), data);
             modal.classList.add('hidden');
             appManager.uiManager.body.classList.remove('modal-open');
         },
         handleCardClick(event) {
             const button = event.target.closest('button');
             if (!button) return;
-            const card = button.closest('[data-id]');
-            const docId = card.dataset.id;
-            const docData = this.state.all.find(pv => pv.id === docId);
+            const docData = this.state.all.find(pv => pv.id === button.closest('[data-id]').dataset.id);
             switch(button.dataset.action) {
-                case 'delete': this.state.docToDelete = docId; appManager.deleteModalManager.show(); break;
+                case 'delete': this.state.docToDelete = docData.id; appManager.deleteModalManager.show(); break;
                 case 'edit': this.populateEditForm(docData); break;
-                case 'whatsapp':
-                    const message = this.getMessageForStatus(docData, this.state.currentUserData.preferredName);
-                    const cleanPhone = '55' + docData.contato.replace(/\D/g, '');
-                    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+                case 'view':
+                    const details = [
+                        { label: 'Cliente', value: docData.nome },
+                        { label: 'Contato', value: docData.contato },
+                        { label: 'PV da Venda', value: docData.pv },
+                        { label: 'Status', value: docData.status },
+                        { label: 'Data da Compra', value: formatDate(docData.dataCompra) },
+                        { label: 'Previsão de Entrega', value: formatDate(docData.previsaoEntrega) },
+                        { label: 'Precisa de Montagem', value: docData.precisaMontagem ? 'Sim' : 'Não' },
+                    ];
+                    if (docData.precisaMontagem) {
+                        details.push({ label: 'Previsão de Montagem', value: formatDate(docData.previsaoMontagem) });
+                    }
+                    details.push({ label: 'Produto(s)', value: docData.produto, full: true });
+                    details.push({ label: 'Observações', value: docData.observacoes, full: true });
+                    appManager.detailsModalManager.show('Detalhes do Pós-venda', details);
                     break;
             }
         },
         populateEditForm(data) {
             const f = this.ui.editForm;
-            f['edit-pv-id'].value = data.id; f['edit-pv-nome'].value = data.nome; f['edit-pv-contato'].value = data.contato;
-            f['edit-pv-pv'].value = data.pv; f['edit-pv-produto'].value = data.produto; f['edit-pv-data-compra'].value = data.dataCompra; f['edit-pv-previsao-entrega'].value = data.previsaoEntrega;
-            f['edit-pv-status'].value = data.status; f['edit-pv-precisa-montagem'].checked = data.precisaMontagem;
+            f['edit-pv-id'].value = data.id;
+            f['edit-pv-nome'].value = data.nome;
+            f['edit-pv-contato'].value = data.contato;
+            f['edit-pv-pv'].value = data.pv;
+            f['edit-pv-produto'].value = data.produto;
+            f['edit-pv-data-compra'].value = data.dataCompra;
+            f['edit-pv-previsao-entrega'].value = data.previsaoEntrega;
+            f['edit-pv-status'].value = data.status;
+            f['edit-pv-precisa-montagem'].checked = data.precisaMontagem;
+            f['edit-pv-observacoes'].value = data.observacoes || '';
             const montagemContainer = f.querySelector('#edit-pv-montagem-container');
             montagemContainer.classList.toggle('hidden', !data.precisaMontagem);
             if(data.precisaMontagem) { f['edit-pv-previsao-montagem'].value = data.previsaoMontagem; }
             this.ui.editModal.classList.remove('hidden');
-            appManager.uiManager.body.classList.add('modal-open');
         },
-        getMessageForStatus(data, salesPersonName) {
-            const nomeCliente = data.nome.split(' ')[0];
-            const salesPersonTitle = `${salesPersonName}, Vendedor(a) da Zenir Móveis`;
-            const messages = {
-                'Aguardando Entrega': `Olá, ${nomeCliente}! Sou ${salesPersonTitle}. Vimos que a entrega do seu produto (*${data.produto}*) estava programada para hoje. Deu tudo certo por aí? O produto chegou em perfeitas condições?`,
-                'Aguardando Montagem': `Olá, ${nomeCliente}, tudo bem? Sou ${salesPersonTitle}, e estou passando para saber se a montagem do seu produto (*${data.produto}*) foi realizada e se ficou tudo como você esperava. Sua satisfação é nossa prioridade!`,
-                'Concluído': `Olá, ${nomeCliente}! Que ótimo que já está tudo certo com sua compra na Zenir Móveis! ✨ Aqui é ${salesPersonTitle}. Salve nosso contato na sua agenda! Assim, você fica por dentro das novidades e recebe nossas melhores ofertas em primeira mão. Até a próxima!`
-            };
-            return messages[data.status] || `Olá ${nomeCliente}! Entrando em contato sobre a sua compra na Zenir Móveis.`;
-        },
-        updateTabCounts() {
-             const counts = { 'Visão Geral': this.state.all.length, 'Aguardando Entrega': this.state.all.filter(l => l.status === 'Aguardando Entrega').length, 'Aguardando Montagem': this.state.all.filter(l => l.status === 'Aguardando Montagem').length, 'Concluído': this.state.all.filter(l => l.status === 'Concluído').length };
-            this.ui.tabsContainer.innerHTML = Object.keys(counts).map(filter => `<button data-filter="${filter}" class="tab-pos-venda whitespace-nowrap py-3 px-3 sm:px-4 border-b-2 font-medium text-sm flex items-center rounded-t-lg transition-colors duration-200"><span class="count-badge mr-2 bg-gray-200 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full">${counts[filter]}</span>${filter}</button>`).join('');
-        },
-        updateTabStyles() {
-            this.ui.tabsContainer.querySelectorAll('.tab-pos-venda').forEach(tab => {
-                const isActive = tab.dataset.filter === this.state.filter;
-                tab.classList.toggle('border-zenir-blue', isActive); 
-                tab.classList.toggle('text-zenir-blue', isActive);
-                tab.classList.toggle('font-semibold', isActive);
-                tab.classList.toggle('bg-blue-50', isActive);
-                
-                tab.classList.toggle('border-transparent', !isActive); 
-                tab.classList.toggle('text-gray-500', !isActive);
-                tab.classList.toggle('hover:text-zenir-blue', !isActive);
-            });
-        }
     },
 
     sacManager: {
-       state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null },
+        state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null },
         ui: {
             list: document.getElementById('sac-list'),
             tabsContainer: document.getElementById('sac-tabs-container'),
@@ -647,29 +640,23 @@ const appManager = {
             editModal: document.getElementById('edit-sac-modal'),
             addForm: document.getElementById('add-sac-form'),
             editForm: document.getElementById('edit-sac-form'),
-            openAddBtn: document.getElementById('open-add-sac-modal-btn'),
         },
         colors: {'Aberta': 'bg-red-100 text-red-800', 'Em Análise': 'bg-yellow-100 text-yellow-800', 'Resolvida': 'bg-green-100 text-green-800'},
         init(user, userData) { this.state.currentUser = user; this.state.currentUserData = userData; this.attachEventListeners(); this.listenForChanges(); },
         attachEventListeners() {
-            this.ui.openAddBtn.addEventListener('click', () => {
+             document.getElementById('open-add-sac-modal-btn').addEventListener('click', () => {
                 this.ui.addForm.reset();
-                this.ui.addForm['sac-data'].value = getYYYYMMDD();
                 this.ui.addModal.classList.remove('hidden');
                 appManager.uiManager.body.classList.add('modal-open');
             });
             this.ui.addForm.addEventListener('submit', (e) => this.handleFormSubmit(e, 'add'));
             this.ui.editForm.addEventListener('submit', (e) => this.handleFormSubmit(e, 'edit'));
-            this.ui.addForm['sac-contato'].addEventListener('input', maskPhone);
-            this.ui.editForm['edit-sac-contato'].addEventListener('input', maskPhone);
-            this.ui.addForm['sac-pv'].addEventListener('input', maskPV);
-            this.ui.editForm['edit-sac-pv'].addEventListener('input', maskPV);
             this.ui.list.addEventListener('click', (e) => this.handleCardClick(e));
-            this.ui.tabsContainer.addEventListener('click', (e) => {
+             this.ui.tabsContainer.addEventListener('click', (e) => {
                 const targetTab = e.target.closest('.tab-sac');
                 if(targetTab) { this.state.filter = targetTab.dataset.filter; this.state.currentPage = 1; this.filterAndRender(); }
             });
-            this.ui.pagination.addEventListener('click', (e) => {
+             this.ui.pagination.addEventListener('click', (e) => {
                 const button = e.target.closest('button');
                 if (button && button.dataset.page) { this.state.currentPage = parseInt(button.dataset.page); this.filterAndRender(); }
             });
@@ -682,61 +669,85 @@ const appManager = {
             });
         },
         filterAndRender() {
-            let filtered = this.state.all;
-
+            let filtered = [...this.state.all];
             if (this.state.filter !== 'Visão Geral') {
                 filtered = this.state.all.filter(item => item.status === this.state.filter);
             }
-
             const statusPriority = { 'Aberta': 1, 'Em Análise': 2, 'Resolvida': 3 };
-
             filtered.sort((a, b) => {
                 if (this.state.filter === 'Visão Geral') {
                     const priorityA = statusPriority[a.status] || 4;
                     const priorityB = statusPriority[b.status] || 4;
-                    if (priorityA !== priorityB) {
-                        return priorityA - priorityB;
-                    }
+                    if (priorityA !== priorityB) return priorityA - priorityB;
                 }
-                const dateA = a.data || '9999-12-31';
-                const dateB = b.data || '9999-12-31';
-                return dateA.localeCompare(dateB);
+                return (a.data || '9999-12-31').localeCompare(b.data || '9999-12-31');
             });
-            
             this.render(filtered);
             this.updateTabCounts();
             this.updateTabStyles();
         },
         render(itemsToRender) {
             this.ui.list.innerHTML = '';
-            this.ui.pagination.innerHTML = '';
             if (itemsToRender.length === 0) { this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhuma ocorrência encontrada.</p>`; return; }
-            
-            const startIndex = (this.state.currentPage - 1) * this.state.itemsPerPage;
-            const paginatedItems = itemsToRender.slice(startIndex, startIndex + this.state.itemsPerPage);
-
+            const paginatedItems = itemsToRender.slice((this.state.currentPage - 1) * this.state.itemsPerPage, this.state.currentPage * this.state.itemsPerPage);
             paginatedItems.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'bg-white p-5 rounded-lg shadow-md flex flex-col justify-between gap-4 fade-in';
                 card.dataset.id = item.id;
                 const statusColor = this.colors[item.status] || 'bg-gray-100 text-gray-800';
-                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Tipo:</strong> ${item.tipo}</p><p><strong class="font-semibold text-gray-700">Descrição:</strong> ${item.descricao}</p></div></div><div class="border-t pt-3 flex justify-between items-center"><div class="text-sm text-gray-500">Data: ${formatDate(item.data)}</div><div class="flex gap-3"><button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div></div>`;
+                const obsSnippet = item.observacoes ? `<p class="text-sm text-gray-500 italic truncate mt-2"><strong class="font-semibold not-italic">Obs:</strong> ${item.observacoes}</p>` : '';
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-xl font-bold text-gray-800">${item.nome}</h3>
+                            <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3"><i class="fas fa-receipt text-gray-400 mr-2"></i>${item.pv || 'N/A'}</p>
+                        <div class="bg-gray-50 p-3 rounded-md text-sm space-y-1">
+                            <p><strong class="font-semibold text-gray-700">Tipo:</strong> ${item.tipo}</p>
+                            <p><strong class="font-semibold text-gray-700">Descrição:</strong> <span class="truncate">${item.descricao}</span></p>
+                        </div>
+                        ${obsSnippet}
+                    </div>
+                    <div class="border-t pt-3 flex justify-between items-center">
+                        <div class="text-sm text-gray-500">Data: ${formatDate(item.data)}</div>
+                        <div class="flex gap-3 items-center">
+                           <button data-action="view" class="text-gray-500 hover:text-zenir-blue"><i class="fas fa-eye fa-lg"></i></button>
+                           <button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button>
+                           <button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button>
+                        </div>
+                    </div>`;
                 this.ui.list.appendChild(card);
             });
             this.renderPagination(itemsToRender.length);
         },
         renderPagination(totalItems) {
             const totalPages = Math.ceil(totalItems / this.state.itemsPerPage);
+            this.ui.pagination.innerHTML = '';
             if (totalPages <= 1) return;
-            let paginationHTML = '';
-            paginationHTML += `<button data-page="${this.state.currentPage - 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === 1 ? 'disabled' : ''}>Anterior</button>`;
-            for (let i = 1; i <= totalPages; i++) { paginationHTML += `<button data-page="${i}" class="px-3 py-1 rounded-md ${this.state.currentPage === i ? 'bg-zenir-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}">${i}</button>`; }
-            paginationHTML += `<button data-page="${this.state.currentPage + 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === totalPages ? 'disabled' : ''}>Próximo</button>`;
-            this.ui.pagination.innerHTML = paginationHTML;
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.dataset.page = i;
+                button.className = `px-3 py-1 rounded-md ${this.state.currentPage === i ? 'bg-zenir-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`;
+                button.textContent = i;
+                this.ui.pagination.appendChild(button);
+            }
+        },
+        updateTabCounts() {
+            const counts = { 'Visão Geral': this.state.all.length, 'Aberta': this.state.all.filter(l => l.status === 'Aberta').length, 'Em Análise': this.state.all.filter(l => l.status === 'Em Análise').length, 'Resolvida': this.state.all.filter(l => l.status === 'Resolvida').length };
+            this.ui.tabsContainer.innerHTML = Object.keys(counts).map(filter => `<button data-filter="${filter}" class="tab-sac whitespace-nowrap py-3 px-3 sm:px-4 border-b-2 font-medium text-sm flex items-center rounded-t-lg"><span class="count-badge mr-2 bg-gray-200 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full">${counts[filter]}</span>${filter}</button>`).join('');
+        },
+        updateTabStyles() {
+             this.ui.tabsContainer.querySelectorAll('.tab-sac').forEach(tab => {
+                const isActive = tab.dataset.filter === this.state.filter;
+                tab.classList.toggle('border-zenir-blue', isActive); 
+                tab.classList.toggle('text-zenir-blue', isActive);
+            });
         },
         async handleFormSubmit(event, type) {
             event.preventDefault();
-            const form = type === 'add' ? this.ui.addForm : this.ui.editForm;
+            const form = event.target;
             const modal = type === 'add' ? this.ui.addModal : this.ui.editModal;
             const idPrefix = type === 'add' ? 'sac-' : 'edit-sac-';
             const data = {
@@ -747,48 +758,49 @@ const appManager = {
                 tipo: form.elements[`${idPrefix}tipo`].value,
                 descricao: form.elements[`${idPrefix}descricao`].value.toUpperCase(),
                 status: form.elements[`${idPrefix}status`].value,
+                observacoes: form.elements[`${idPrefix}observacoes`].value.toUpperCase(),
                 userId: this.state.currentUser.uid,
             };
-            if (type === 'add') { await addDoc(collection(db, 'sac_occurrences'), data); } 
-            else { const docId = form.elements['edit-sac-id'].value; await updateDoc(doc(db, 'sac_occurrences', docId), data); }
+            if (type === 'add') await addDoc(collection(db, 'sac_occurrences'), data);
+            else await updateDoc(doc(db, 'sac_occurrences', form.elements['edit-sac-id'].value), data);
             modal.classList.add('hidden');
             appManager.uiManager.body.classList.remove('modal-open');
         },
         handleCardClick(event) {
             const button = event.target.closest('button');
             if (!button) return;
-            const card = button.closest('[data-id]');
-            const docId = card.dataset.id;
+            const docData = this.state.all.find(item => item.id === button.closest('[data-id]').dataset.id);
             switch(button.dataset.action) {
-                case 'delete': this.state.docToDelete = docId; appManager.deleteModalManager.show(); break;
-                case 'edit': this.populateEditForm(this.state.all.find(item => item.id === docId)); break;
+                case 'delete': this.state.docToDelete = docData.id; appManager.deleteModalManager.show(); break;
+                case 'edit': this.populateEditForm(docData); break;
+                case 'view':
+                     const details = [
+                        { label: 'Cliente', value: docData.nome },
+                        { label: 'Contato', value: docData.contato },
+                        { label: 'PV da Venda', value: docData.pv },
+                        { label: 'Status', value: docData.status },
+                        { label: 'Data da Ocorrência', value: formatDate(docData.data) },
+                        { label: 'Tipo', value: docData.tipo },
+                        { label: 'Descrição', value: docData.descricao, full: true },
+                        { label: 'Observações', value: docData.observacoes, full: true },
+                    ];
+                    appManager.detailsModalManager.show('Detalhes do SAC', details);
+                    break;
             }
         },
         populateEditForm(data) {
             const f = this.ui.editForm;
-            f['edit-sac-id'].value = data.id; f['edit-sac-nome'].value = data.nome; f['edit-sac-contato'].value = data.contato;
-            f['edit-sac-pv'].value = data.pv; f['edit-sac-data'].value = data.data; f['edit-sac-tipo'].value = data.tipo;
-            f['edit-sac-descricao'].value = data.descricao; f['edit-sac-status'].value = data.status;
+            f['edit-sac-id'].value = data.id;
+            f['edit-sac-nome'].value = data.nome;
+            f['edit-sac-contato'].value = data.contato;
+            f['edit-sac-pv'].value = data.pv;
+            f['edit-sac-data'].value = data.data;
+            f['edit-sac-tipo'].value = data.tipo;
+            f['edit-sac-descricao'].value = data.descricao;
+            f['edit-sac-status'].value = data.status;
+            f['edit-sac-observacoes'].value = data.observacoes || '';
             this.ui.editModal.classList.remove('hidden');
-            appManager.uiManager.body.classList.add('modal-open');
         },
-        updateTabCounts() {
-             const counts = { 'Visão Geral': this.state.all.length, 'Aberta': this.state.all.filter(l => l.status === 'Aberta').length, 'Em Análise': this.state.all.filter(l => l.status === 'Em Análise').length, 'Resolvida': this.state.all.filter(l => l.status === 'Resolvida').length };
-            this.ui.tabsContainer.innerHTML = Object.keys(counts).map(filter => `<button data-filter="${filter}" class="tab-sac whitespace-nowrap py-3 px-3 sm:px-4 border-b-2 font-medium text-sm flex items-center rounded-t-lg transition-colors duration-200"><span class="count-badge mr-2 bg-gray-200 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full">${counts[filter]}</span>${filter}</button>`).join('');
-        },
-        updateTabStyles() {
-            this.ui.tabsContainer.querySelectorAll('.tab-sac').forEach(tab => {
-                const isActive = tab.dataset.filter === this.state.filter;
-                tab.classList.toggle('border-zenir-blue', isActive); 
-                tab.classList.toggle('text-zenir-blue', isActive);
-                tab.classList.toggle('font-semibold', isActive);
-                tab.classList.toggle('bg-blue-50', isActive);
-                
-                tab.classList.toggle('border-transparent', !isActive); 
-                tab.classList.toggle('text-gray-500', !isActive);
-                tab.classList.toggle('hover:text-zenir-blue', !isActive);
-            });
-        }
     },
     
     usersManager: {
@@ -816,7 +828,6 @@ const appManager = {
                 if (button && button.dataset.page) { this.state.currentPage = parseInt(button.dataset.page); this.filterAndRender(); }
             });
             this.ui.editForm.addEventListener('submit', (e) => this.handleEditFormSubmit(e));
-            this.ui.editForm['edit-user-phone'].addEventListener('input', maskPhone);
         },
         
         listenForChanges() {
@@ -841,19 +852,14 @@ const appManager = {
         },
         render(usersToRender) { 
             this.ui.list.innerHTML = '';
-            this.ui.pagination.innerHTML = '';
             if(usersToRender.length === 0) { this.ui.list.innerHTML = '<p class="p-4 text-center text-gray-500">Nenhum usuário encontrado.</p>'; return; }
-
             const paginatedItems = usersToRender.slice((this.state.currentPage - 1) * this.state.itemsPerPage, this.state.currentPage * this.state.itemsPerPage);
-
             paginatedItems.forEach(user => {
                 const userDiv = document.createElement('div');
                 userDiv.className = 'flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b';
                 userDiv.dataset.id = user.id;
-
                 const statusColor = this.colors[user.status] || 'bg-gray-100 text-gray-800';
                 const isAdmin = user.email === this.ADMIN_EMAIL;
-
                 let actionButtonsHTML = '';
                 if (user.status === 'Pendente') {
                     actionButtonsHTML += `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Aprovar</button>`;
@@ -864,15 +870,12 @@ const appManager = {
                 if (user.status === 'Inativo' && !isAdmin) {
                     actionButtonsHTML += `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Reativar</button>`;
                 }
-                
                 actionButtonsHTML += `<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit"></i></button>`;
-                
                 if (!isAdmin) {
                     actionButtonsHTML += `<button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt"></i></button>`;
                 } else {
                     actionButtonsHTML += `<div class="w-6"></div>`;
                 }
-
                 userDiv.innerHTML = `
                     <div class="flex-1 mb-4 sm:mb-0">
                         <p class="font-bold text-gray-800">${user.name} ${isAdmin ? '<span class="text-xs text-zenir-red font-bold">(Admin)</span>' : ''}</p>
@@ -883,36 +886,32 @@ const appManager = {
                     <div class="flex items-center space-x-2">
                          <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${user.status}</span>
                          ${actionButtonsHTML}
-                    </div>
-                `;
+                    </div>`;
                 this.ui.list.appendChild(userDiv);
             });
-             this.renderPagination(usersToRender.length);
+            this.renderPagination(usersToRender.length);
         },
         renderPagination(totalItems) {
             const totalPages = Math.ceil(totalItems / this.state.itemsPerPage);
+            this.ui.pagination.innerHTML = '';
             if (totalPages <= 1) return;
-            let paginationHTML = '';
-            paginationHTML += `<button data-page="${this.state.currentPage - 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === 1 ? 'disabled' : ''}>Anterior</button>`;
-            for (let i = 1; i <= totalPages; i++) { paginationHTML += `<button data-page="${i}" class="px-3 py-1 rounded-md ${this.state.currentPage === i ? 'bg-zenir-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}">${i}</button>`; }
-            paginationHTML += `<button data-page="${this.state.currentPage + 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === totalPages ? 'disabled' : ''}>Próximo</button>`;
-            this.ui.pagination.innerHTML = paginationHTML;
-         },
-         updateTabCounts() {
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.dataset.page = i;
+                button.className = `px-3 py-1 rounded-md ${this.state.currentPage === i ? 'bg-zenir-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`;
+                button.textContent = i;
+                this.ui.pagination.appendChild(button);
+            }
+        },
+        updateTabCounts() {
             const counts = { 'Pendentes': this.state.all.filter(u => u.status === 'Pendente').length, 'Aprovados': this.state.all.filter(u => u.status === 'Aprovado').length, 'Inativos': this.state.all.filter(u => u.status === 'Inativo').length };
-            this.ui.tabsContainer.innerHTML = Object.keys(counts).map(filter => `<button data-filter="${filter}" class="tab-users whitespace-nowrap py-3 px-3 sm:px-4 border-b-2 font-medium text-sm flex items-center rounded-t-lg transition-colors duration-200"><span class="count-badge mr-2 bg-gray-200 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full">${counts[filter]}</span>${filter}</button>`).join('');
+            this.ui.tabsContainer.innerHTML = Object.keys(counts).map(filter => `<button data-filter="${filter}" class="tab-users whitespace-nowrap py-3 px-3 sm:px-4 border-b-2 font-medium text-sm flex items-center rounded-t-lg"><span class="count-badge mr-2 bg-gray-200 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full">${counts[filter]}</span>${filter}</button>`).join('');
         },
         updateTabStyles() { 
             this.ui.tabsContainer.querySelectorAll('.tab-users').forEach(tab => {
                 const isActive = tab.dataset.filter === this.state.filter;
                 tab.classList.toggle('border-zenir-blue', isActive); 
                 tab.classList.toggle('text-zenir-blue', isActive);
-                tab.classList.toggle('font-semibold', isActive);
-                tab.classList.toggle('bg-blue-50', isActive);
-                
-                tab.classList.toggle('border-transparent', !isActive); 
-                tab.classList.toggle('text-gray-500', !isActive);
-                tab.classList.toggle('hover:text-zenir-blue', !isActive);
             });
         },
         async handleCardClick(event) {
