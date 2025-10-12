@@ -618,7 +618,7 @@ const appManager = {
             const messages = {
                 'Aguardando Entrega': `Olá, ${nomeCliente}! Sou ${salesPersonTitle}. Vimos que a entrega do seu produto (*${data.produto}*) estava programada para hoje. Deu tudo certo por aí? O produto chegou em perfeitas condições?`,
                 'Aguardando Montagem': `Olá, ${nomeCliente}, tudo bem? Sou ${salesPersonTitle}, e estou passando para saber se a montagem do seu produto (*${data.produto}*) foi realizada e se ficou tudo como você esperava. Sua satisfação é nossa prioridade!`,
-                'Concluído': `Olá, ${nomeCliente}! Que ótimo que já está tudo certo com sua compra na Zenir Móveis! ✨ Aqui é ${salesPersonTitle}. Salve nosso contato na sua agenda! Assim, você fica por dentro das novidades e recebe nossas melhores ofertas em primeira mão. Até a próxima!`
+                'Concluído': `Que ótimo que já está tudo certo com sua compra! ✨ Salve meu contato na sua agenda! Assim, você fica por dentro das novidades e recebe nossas melhores ofertas em primeira mão. Até a próxima!`
             };
             return messages[data.status] || `Olá ${nomeCliente}! Entrando em contato sobre a sua compra na Zenir Móveis.`;
         },
