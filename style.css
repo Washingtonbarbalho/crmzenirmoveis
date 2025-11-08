@@ -63,7 +63,7 @@ body.modal-open {
     100% { transform: rotate(360deg); }
 }
 
-/* NOVOS ESTILOS PARA O "BALÃOZINHO" DA PAGINAÇÃO */
+/* Estilos para o "BALÃOZINHO" DA PAGINAÇÃO (CSS VÁLIDO) */
 .page-popover {
     transform-origin: bottom center;
     animation: popover-scale-up 0.2s ease-in-out;
@@ -80,11 +80,6 @@ body.modal-open {
     }
 }
 
-.popover-page-btn {
-    @apply w-full h-10 flex items-center justify-center rounded-md text-sm font-medium transition-colors;
-    @apply text-gray-700 bg-white hover:bg-gray-100;
-}
-
-.popover-page-btn.active {
-    @apply bg-zenir-blue text-white hover:bg-zenir-blue-dark;
-}
+/* As classes de estilo dos botões do popover (@apply) 
+   foram removidas daqui e movidas para o app.js 
+   para corrigir o erro de sintaxe. */
