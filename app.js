@@ -57,10 +57,10 @@ const appManager = {
         pageTitle: document.getElementById('page-title'),
         loadingSpinner: document.getElementById('loading-spinner'),
         userDisplayName: document.getElementById('user-display-name'),
-        // --- NOVO: Gerenciamento do Popover de Paginação ---
+        // --- Gerenciamento do Popover de Paginação ---
         pagePopover: document.getElementById('page-popover'),
         pagePopoverContent: document.getElementById('page-popover-content'),
-        paginationCallback: null, // Callback da paginação ativa
+        paginationCallback: null, 
         // ----------------------------------------------------
 
         init() {
@@ -78,7 +78,7 @@ const appManager = {
                 e.preventDefault(); this.showPage(l.dataset.page);
             }));
 
-            // --- NOVO: Listeners do Popover de Paginação ---
+            // --- Listeners do Popover de Paginação ---
             // Fechar ao clicar fora
             document.addEventListener('click', (e) => {
                 if (!this.pagePopover.classList.contains('hidden')) {
@@ -86,11 +86,11 @@ const appManager = {
                         this.hidePagePopover();
                     }
                 }
-            }, true); // Usar 'true' para capturar o evento na fase de captura
+            }, true); 
 
             // Clique dentro do popover (delegação de evento)
             this.pagePopoverContent.addEventListener('click', (e) => {
-                const button = e.target.closest('.popover-page-btn');
+                const button = e.target.closest('button[data-page]');
                 if (button && this.paginationCallback) {
                     const newPage = parseInt(button.dataset.page);
                     if (!isNaN(newPage)) {
@@ -107,11 +107,11 @@ const appManager = {
             const titles = { leads: 'Gerenciamento de Leads', 'pos-venda': 'Gerenciamento Pós-venda', sac: 'Gerenciamento SAC', users: 'Gerenciamento de Usuários' };
             this.pageTitle.textContent = titles[pageId] || 'CRM Zenir';
             document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('bg-zenir-blue-dark', l.dataset.page === pageId));
-            localStorage.setItem('lastVisitedPage', pageId); // Salva a página atual
+            localStorage.setItem('lastVisitedPage', pageId); 
             this.sidebar.classList.remove('open');
             this.overlay.classList.add('hidden');
             this.body.classList.remove('modal-open');
-            this.hidePagePopover(); // Esconde o popover ao mudar de página
+            this.hidePagePopover(); 
         },
         showLoading(show) {
             this.loadingSpinner.style.display = show ? 'flex' : 'none';
@@ -119,24 +119,27 @@ const appManager = {
         // --- NOVAS FUNÇÕES DE PAGINAÇÃO ---
         showPagePopover(button, start, end, currentPage, callback) {
             this.pagePopoverContent.innerHTML = '';
-            this.paginationCallback = callback; // Armazena o callback correto
+            this.paginationCallback = callback; 
             
             let content = '';
+            // **CORREÇÃO**: Classes do Tailwind movidas do CSS para cá
+            const baseClasses = 'w-full h-10 flex items-center justify-center rounded-md text-sm font-medium transition-colors';
+            const inactiveClasses = 'text-gray-700 bg-white hover:bg-gray-100';
+            const activeClasses = 'bg-zenir-blue text-white hover:bg-zenir-blue-dark';
+
             for (let i = start; i <= end; i++) {
                 const isActive = i === currentPage;
-                content += `<button data-page="${i}" class="popover-page-btn ${isActive ? 'active' : ''}">${i}</button>`;
+                content += `<button data-page="${i}" class="${baseClasses} ${isActive ? activeClasses : inactiveClasses}">${i}</button>`;
             }
             this.pagePopoverContent.innerHTML = content;
 
             const rect = button.getBoundingClientRect();
             this.pagePopover.classList.remove('hidden');
             
-            // Posiciona o popover acima do botão "..."
             const popoverRect = this.pagePopover.getBoundingClientRect();
-            let top = rect.top - popoverRect.height - 8; // 8px de espaço
+            let top = rect.top - popoverRect.height - 8; 
             let left = rect.left + (rect.width / 2) - (popoverRect.width / 2);
 
-            // Ajusta se sair da tela
             if (top < 0) { top = rect.bottom + 8; }
             if (left < 0) { left = 8; }
             if (left + popoverRect.width > window.innerWidth) { left = window.innerWidth - popoverRect.width - 8; }
@@ -154,7 +157,7 @@ const appManager = {
             if (totalPages <= 1) return;
 
             const MAX_PAGES_BEFORE_ELLIPSIS = 4;
-            const TOTAL_VISIBLE_PAGES = 6; // 1, 2, 3, 4, ..., [Ultima] (são 6 slots)
+            const TOTAL_VISIBLE_PAGES = 6; 
 
             const createPageButton = (page, text = page, isActive = false, isDisabled = false, isEllipsis = false) => {
                 let classes = 'px-3 py-1 rounded-md transition-colors ';
@@ -190,8 +193,9 @@ const appManager = {
                 const ellipsisEnd = totalPages - 1;
                 const isCurrentPageInEllipsis = (currentPage >= ellipsisStart && currentPage <= ellipsisEnd);
                 
-                const ellipsisButton = createPageButton(currentPage, '...', isCurrentPageInEllipsis, false, true);
-                // Adiciona os dados para o popover
+                // **CORREÇÃO**: Garante que o 'data-page' no '...' seja a página atual se ela estiver no meio
+                const ellipsisPage = isCurrentPageInEllipsis ? currentPage : ellipsisStart;
+                const ellipsisButton = createPageButton(ellipsisPage, '...', isCurrentPageInEllipsis, false, true);
                 paginationHTML += ellipsisButton.replace('>', ` data-start="${ellipsisStart}" data-end="${ellipsisEnd}">`);
 
                 // Última Página
@@ -213,11 +217,14 @@ const appManager = {
                 });
             });
 
+            // **CORREÇÃO**: Garantia de 'this'
+            const self = this; 
             container.querySelectorAll('.pagination-ellipsis').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const start = parseInt(e.currentTarget.dataset.start);
                     const end = parseInt(e.currentTarget.dataset.end);
-                    this.showPagePopover(e.currentTarget, start, end, currentPage, onPageClickCallback);
+                    // Usa 'self' para garantir que está chamando a função do uiManager
+                    self.showPagePopover(e.currentTarget, start, end, currentPage, onPageClickCallback); 
                 });
             });
         }
@@ -356,7 +363,7 @@ const appManager = {
                             appManager.uiManager.userDisplayName.textContent = `Olá, ${userData.preferredName || userData.name.split(' ')[0]}!`;
                             document.getElementById('nav-users-link').classList.toggle('hidden', userData.role !== 'admin');
 
-                            appManager.uiManager.init(); // <- Agora inicializa o popover aqui
+                            appManager.uiManager.init(); 
                             appManager.deleteModalManager.init();
                             appManager.leadsManager.init(user, userData);
                             appManager.posVendaManager.init(user, userData);
@@ -428,7 +435,6 @@ const appManager = {
                 const targetTab = e.target.closest('.tab-leads');
                 if(targetTab) { this.state.filter = targetTab.dataset.filter; this.state.currentPage = 1; this.filterAndRender(); }
             });
-            // REMOVIDO: a lógica de paginação agora é centralizada
             this.ui.editForm['edit-status-final'].addEventListener('change', (e) => {
                  const isFinal = e.target.value !== 'Em Andamento';
                  this.ui.editForm['edit-estagio-contato'].disabled = isFinal;
@@ -445,7 +451,7 @@ const appManager = {
             });
             this.ui.searchInput.addEventListener('input', (e) => {
                 this.state.searchTerm = e.target.value.toUpperCase();
-                this.state.currentPage = 1; // Reseta para a primeira página ao buscar
+                this.state.currentPage = 1; 
                 this.filterAndRender();
             });
         },
@@ -493,35 +499,36 @@ const appManager = {
         },
         render(leadsToRender) {
             this.ui.list.innerHTML = '';
-            if (leadsToRender.length === 0) { this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhum lead encontrado.</p>`; }
-            
-            const paginatedItems = leadsToRender.slice((this.state.currentPage - 1) * this.state.itemsPerPage, this.state.currentPage * this.state.itemsPerPage);
-            
-            paginatedItems.forEach(lead => {
-                const isFinal = lead.statusFinal !== 'Em Andamento';
-                const statusText = isFinal ? lead.statusFinal : lead.estagioContato;
-                const statusColor = isFinal ? this.colors.final[statusText] : this.colors.estagio[statusText];
-                const whatsappBtn = !isFinal ? `<button data-action="whatsapp" class="text-green-500 hover:opacity-75"><i class="fab fa-whatsapp fa-lg"></i></button>` : '';
-                const card = document.createElement('div');
-                card.className = 'bg-white p-5 rounded-lg shadow-md flex flex-col justify-between gap-4 fade-in';
-                card.dataset.id = lead.id;
-                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${lead.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${statusText}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${lead.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">Interesse:</strong> <span class="font-normal">${lead.produto}</span></p><p><strong class="font-semibold text-gray-700">Objeção:</strong> <span class="font-normal">${lead.motivo || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Proposta:</strong> <span class="font-normal">${lead.proposta || 'N/A'}</span></p>${lead.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${lead.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-between items-center"><div class="text-sm"><span class="font-semibold text-gray-700">Retornar em:</span><p class="font-bold ${isFinal ? 'text-gray-400 line-through' : 'text-zenir-red'}">${formatDate(lead.proximoContato)}</p></div><div class="flex gap-3">${whatsappBtn}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div></div>`;
-                this.ui.list.appendChild(card);
-            });
+            if (leadsToRender.length === 0) { 
+                this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhum lead encontrado.</p>`; 
+            } else {
+                const paginatedItems = leadsToRender.slice((this.state.currentPage - 1) * this.state.itemsPerPage, this.state.currentPage * this.state.itemsPerPage);
+                
+                paginatedItems.forEach(lead => {
+                    const isFinal = lead.statusFinal !== 'Em Andamento';
+                    const statusText = isFinal ? lead.statusFinal : lead.estagioContato;
+                    const statusColor = isFinal ? this.colors.final[statusText] : this.colors.estagio[statusText];
+                    const whatsappBtn = !isFinal ? `<button data-action="whatsapp" class="text-green-500 hover:opacity-75"><i class="fab fa-whatsapp fa-lg"></i></button>` : '';
+                    const card = document.createElement('div');
+                    card.className = 'bg-white p-5 rounded-lg shadow-md flex flex-col justify-between gap-4 fade-in';
+                    card.dataset.id = lead.id;
+                    card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${lead.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${statusText}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${lead.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">Interesse:</strong> <span class="font-normal">${lead.produto}</span></p><p><strong class="font-semibold text-gray-700">Objeção:</strong> <span class="font-normal">${lead.motivo || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Proposta:</strong> <span class="font-normal">${lead.proposta || 'N/A'}</span></p>${lead.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${lead.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-between items-center"><div class="text-sm"><span class="font-semibold text-gray-700">Retornar em:</span><p class="font-bold ${isFinal ? 'text-gray-400 line-through' : 'text-zenir-red'}">${formatDate(lead.proximoContato)}</p></div><div class="flex gap-3">${whatsappBtn}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div></div>`;
+                    this.ui.list.appendChild(card);
+                });
+            }
 
-            // ATUALIZADO: Chama o renderizador de paginação centralizado
+            // Chama o renderizador de paginação centralizado
             this.renderPagination(leadsToRender.length);
         },
         renderPagination(totalItems) {
-            // Esta função agora é um wrapper para o gerenciador central
-            appManager.renderPagination(
+            appManager.uiManager.renderPagination(
                 this.ui.pagination,
                 totalItems,
                 this.state.itemsPerPage,
                 this.state.currentPage,
                 (newPage) => {
                     this.state.currentPage = newPage;
-                    this.filterAndRender(); // Re-renderiza apenas este módulo
+                    this.filterAndRender(); 
                 }
             );
         },
@@ -638,7 +645,6 @@ const appManager = {
                 const targetTab = e.target.closest('.tab-pos-venda');
                 if(targetTab) { this.state.filter = targetTab.dataset.filter; this.state.currentPage = 1; this.filterAndRender(); }
             });
-            // REMOVIDO: a lógica de paginação agora é centralizada
             this.ui.addForm['pv-precisa-montagem'].addEventListener('change', (e) => { this.ui.addForm.querySelector('#pv-montagem-container').classList.toggle('hidden', !e.target.checked); });
             this.ui.editForm['edit-pv-precisa-montagem'].addEventListener('change', (e) => { this.ui.editForm.querySelector('#edit-pv-montagem-container').classList.toggle('hidden', !e.target.checked); });
             this.ui.searchInput.addEventListener('input', (e) => {
@@ -698,34 +704,34 @@ const appManager = {
         },
         render(pvToRender) {
             this.ui.list.innerHTML = '';
-             if (pvToRender.length === 0) { this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhum registro encontrado.</p>`; }
-            
-            const startIndex = (this.state.currentPage - 1) * this.state.itemsPerPage;
-            const paginatedItems = pvToRender.slice(startIndex, startIndex + this.state.itemsPerPage);
+             if (pvToRender.length === 0) { 
+                this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhum registro encontrado.</p>`; 
+            } else {
+                const startIndex = (this.state.currentPage - 1) * this.state.itemsPerPage;
+                const paginatedItems = pvToRender.slice(startIndex, startIndex + this.state.itemsPerPage);
 
-            paginatedItems.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'bg-white p-5 rounded-lg shadow-md flex flex-col justify-between gap-4 fade-in';
-                card.dataset.id = item.id;
-                const statusColor = this.colors[item.status] || 'bg-gray-100 text-gray-800';
-                const whatsappButton = `<button data-action="whatsapp" class="text-green-500 hover:opacity-75"><i class="fab fa-whatsapp fa-lg"></i></button>`;
-                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Produto:</strong> ${item.produto}</p><p><strong class="font-semibold text-gray-700">Entrega:</strong> <span class="font-bold text-zenir-red">${formatDate(item.previsaoEntrega)}</span></p>${item.precisaMontagem && item.previsaoMontagem ? `<p><strong class="font-semibold">Montagem:</strong> <span class="font-bold text-zenir-blue">${formatDate(item.previsaoMontagem)}</span></p>` : ''}${item.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${item.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-end items-center gap-3">${whatsappButton}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div>`;
-                this.ui.list.appendChild(card);
-            });
+                paginatedItems.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white p-5 rounded-lg shadow-md flex flex-col justify-between gap-4 fade-in';
+                    card.dataset.id = item.id;
+                    const statusColor = this.colors[item.status] || 'bg-gray-100 text-gray-800';
+                    const whatsappButton = `<button data-action="whatsapp" class="text-green-500 hover:opacity-75"><i class="fab fa-whatsapp fa-lg"></i></button>`;
+                    card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Produto:</strong> ${item.produto}</p><p><strong class="font-semibold text-gray-700">Entrega:</strong> <span class="font-bold text-zenir-red">${formatDate(item.previsaoEntrega)}</span></p>${item.precisaMontagem && item.previsaoMontagem ? `<p><strong class="font-semibold">Montagem:</strong> <span class="font-bold text-zenir-blue">${formatDate(item.previsaoMontagem)}</span></p>` : ''}${item.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${item.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-end items-center gap-3">${whatsappButton}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div>`;
+                    this.ui.list.appendChild(card);
+                });
+            }
             
-            // ATUALIZADO: Chama o renderizador de paginação centralizado
             this.renderPagination(pvToRender.length);
         },
         renderPagination(totalItems) {
-            // Esta função agora é um wrapper para o gerenciador central
-            appManager.renderPagination(
+            appManager.uiManager.renderPagination(
                 this.ui.pagination,
                 totalItems,
                 this.state.itemsPerPage,
                 this.state.currentPage,
                 (newPage) => {
                     this.state.currentPage = newPage;
-                    this.filterAndRender(); // Re-renderiza apenas este módulo
+                    this.filterAndRender(); 
                 }
             );
         },
@@ -843,7 +849,6 @@ const appManager = {
                 const targetTab = e.target.closest('.tab-sac');
                 if(targetTab) { this.state.filter = targetTab.dataset.filter; this.state.currentPage = 1; this.filterAndRender(); }
             });
-            // REMOVIDO: a lógica de paginação agora é centralizada
             this.ui.searchInput.addEventListener('input', (e) => {
                 this.state.searchTerm = e.target.value.toUpperCase();
                 this.state.currentPage = 1;
@@ -894,33 +899,33 @@ const appManager = {
         },
         render(itemsToRender) {
             this.ui.list.innerHTML = '';
-            if (itemsToRender.length === 0) { this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhuma ocorrência encontrada.</p>`; }
-            
-            const startIndex = (this.state.currentPage - 1) * this.state.itemsPerPage;
-            const paginatedItems = itemsToRender.slice(startIndex, startIndex + this.state.itemsPerPage);
+            if (itemsToRender.length === 0) { 
+                this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhuma ocorrência encontrada.</p>`; 
+            } else {
+                const startIndex = (this.state.currentPage - 1) * this.state.itemsPerPage;
+                const paginatedItems = itemsToRender.slice(startIndex, startIndex + this.state.itemsPerPage);
 
-            paginatedItems.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'bg-white p-5 rounded-lg shadow-md flex flex-col justify-between gap-4 fade-in';
-                card.dataset.id = item.id;
-                const statusColor = this.colors[item.status] || 'bg-gray-100 text-gray-800';
-                card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Tipo:</strong> ${item.tipo}</p><p><strong class="font-semibold text-gray-700">Descrição:</strong> ${item.descricao}</p>${item.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${item.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-between items-center"><div class="text-sm text-gray-500">Data: ${formatDate(item.data)}</div><div class="flex gap-3"><button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div></div>`;
-                this.ui.list.appendChild(card);
-            });
+                paginatedItems.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white p-5 rounded-lg shadow-md flex flex-col justify-between gap-4 fade-in';
+                    card.dataset.id = item.id;
+                    const statusColor = this.colors[item.status] || 'bg-gray-100 text-gray-800';
+                    card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Tipo:</strong> ${item.tipo}</p><p><strong class="font-semibold text-gray-700">Descrição:</strong> ${item.descricao}</p>${item.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${item.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-between items-center"><div class="text-sm text-gray-500">Data: ${formatDate(item.data)}</div><div class="flex gap-3"><button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div></div>`;
+                    this.ui.list.appendChild(card);
+                });
+            }
 
-            // ATUALIZADO: Chama o renderizador de paginação centralizado
             this.renderPagination(itemsToRender.length);
         },
         renderPagination(totalItems) {
-            // Esta função agora é um wrapper para o gerenciador central
-            appManager.renderPagination(
+            appManager.uiManager.renderPagination(
                 this.ui.pagination,
                 totalItems,
                 this.state.itemsPerPage,
                 this.state.currentPage,
                 (newPage) => {
                     this.state.currentPage = newPage;
-                    this.filterAndRender(); // Re-renderiza apenas este módulo
+                    this.filterAndRender(); 
                 }
             );
         },
@@ -1003,7 +1008,6 @@ const appManager = {
                 const targetTab = e.target.closest('.tab-users');
                 if(targetTab) { this.state.filter = targetTab.dataset.filter; this.state.currentPage = 1; this.filterAndRender(); }
             });
-            // REMOVIDO: a lógica de paginação agora é centralizada
             this.ui.editForm.addEventListener('submit', (e) => this.handleEditFormSubmit(e));
             this.ui.editForm['edit-user-phone'].addEventListener('input', maskPhone);
         },
@@ -1030,65 +1034,65 @@ const appManager = {
         },
         render(usersToRender) { 
             this.ui.list.innerHTML = '';
-            if(usersToRender.length === 0) { this.ui.list.innerHTML = '<p class="p-4 text-center text-gray-500">Nenhum usuário encontrado.</p>'; }
+            if(usersToRender.length === 0) { 
+                this.ui.list.innerHTML = '<p class="p-4 text-center text-gray-500">Nenhum usuário encontrado.</p>'; 
+            } else {
+                const paginatedItems = usersToRender.slice((this.state.currentPage - 1) * this.state.itemsPerPage, this.state.currentPage * this.state.itemsPerPage);
 
-            const paginatedItems = usersToRender.slice((this.state.currentPage - 1) * this.state.itemsPerPage, this.state.currentPage * this.state.itemsPerPage);
+                paginatedItems.forEach(user => {
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b';
+                    userDiv.dataset.id = user.id;
 
-            paginatedItems.forEach(user => {
-                const userDiv = document.createElement('div');
-                userDiv.className = 'flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b';
-                userDiv.dataset.id = user.id;
+                    const statusColor = this.colors[user.status] || 'bg-gray-100 text-gray-800';
+                    const isAdmin = user.email === this.ADMIN_EMAIL;
 
-                const statusColor = this.colors[user.status] || 'bg-gray-100 text-gray-800';
-                const isAdmin = user.email === this.ADMIN_EMAIL;
+                    let actionButtonsHTML = '';
+                    if (user.status === 'Pendente') {
+                        actionButtonsHTML += `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Aprovar</button>`;
+                    }
+                    if (user.status === 'Aprovado' && !isAdmin) {
+                        actionButtonsHTML += `<button data-action="deactivate" class="bg-yellow-500 text-white px-3 py-1 rounded-md text-xs hover:bg-yellow-600">Inativar</button>`;
+                    }
+                    if (user.status === 'Inativo' && !isAdmin) {
+                        actionButtonsHTML += `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Reativar</button>`;
+                    }
+                    
+                    actionButtonsHTML += `<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit"></i></button>`;
+                    
+                    if (!isAdmin) {
+                        actionButtonsHTML += `<button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt"></i></button>`;
+                    } else {
+                        actionButtonsHTML += `<div class="w-6"></div>`;
+                    }
 
-                let actionButtonsHTML = '';
-                if (user.status === 'Pendente') {
-                    actionButtonsHTML += `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Aprovar</button>`;
-                }
-                if (user.status === 'Aprovado' && !isAdmin) {
-                    actionButtonsHTML += `<button data-action="deactivate" class="bg-yellow-500 text-white px-3 py-1 rounded-md text-xs hover:bg-yellow-600">Inativar</button>`;
-                }
-                if (user.status === 'Inativo' && !isAdmin) {
-                    actionButtonsHTML += `<button data-action="approve" class="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600">Reativar</button>`;
-                }
-                
-                actionButtonsHTML += `<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit"></i></button>`;
-                
-                if (!isAdmin) {
-                    actionButtonsHTML += `<button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt"></i></button>`;
-                } else {
-                    actionButtonsHTML += `<div class="w-6"></div>`;
-                }
+                    userDiv.innerHTML = `
+                        <div class="flex-1 mb-4 sm:mb-0">
+                            <p class="font-bold text-gray-800">${user.name} ${isAdmin ? '<span class="text-xs text-zenir-red font-bold">(Admin)</span>' : ''}</p>
+                            <p class="text-sm text-gray-600">${user.email}</p>
+                            <p class="text-sm text-gray-500">Telefone: ${user.phone || 'N/A'}</p>
+                            <p class="text-sm text-gray-500">Filial: ${user.filial || 'N/A'}</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                             <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${user.status}</span>
+                             ${actionButtonsHTML}
+                        </div>
+                    `;
+                    this.ui.list.appendChild(userDiv);
+                });
+            }
 
-                userDiv.innerHTML = `
-                    <div class="flex-1 mb-4 sm:mb-0">
-                        <p class="font-bold text-gray-800">${user.name} ${isAdmin ? '<span class="text-xs text-zenir-red font-bold">(Admin)</span>' : ''}</p>
-                        <p class="text-sm text-gray-600">${user.email}</p>
-                        <p class="text-sm text-gray-500">Telefone: ${user.phone || 'N/A'}</p>
-                        <p class="text-sm text-gray-500">Filial: ${user.filial || 'N/A'}</p>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                         <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${user.status}</span>
-                         ${actionButtonsHTML}
-                    </div>
-                `;
-                this.ui.list.appendChild(userDiv);
-            });
-
-            // ATUALIZADO: Chama o renderizador de paginação centralizado
             this.renderPagination(usersToRender.length);
         },
         renderPagination(totalItems) {
-            // Esta função agora é um wrapper para o gerenciador central
-            appManager.renderPagination(
+            appManager.uiManager.renderPagination(
                 this.ui.pagination,
                 totalItems,
                 this.state.itemsPerPage,
                 this.state.currentPage,
                 (newPage) => {
                     this.state.currentPage = newPage;
-                    this.filterAndRender(); // Re-renderiza apenas este módulo
+                    this.filterAndRender(); 
                 }
             );
          },
