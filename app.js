@@ -122,7 +122,6 @@ const appManager = {
             this.paginationCallback = callback; 
             
             let content = '';
-            // **CORREÇÃO**: Classes do Tailwind movidas do CSS para cá
             const baseClasses = 'w-full h-10 flex items-center justify-center rounded-md text-sm font-medium transition-colors';
             const inactiveClasses = 'text-gray-700 bg-white hover:bg-gray-100';
             const activeClasses = 'bg-zenir-blue text-white hover:bg-zenir-blue-dark';
@@ -156,8 +155,10 @@ const appManager = {
             const totalPages = Math.ceil(totalItems / itemsPerPage);
             if (totalPages <= 1) return;
 
-            const MAX_PAGES_BEFORE_ELLIPSIS = 4;
-            const TOTAL_VISIBLE_PAGES = 6; 
+            // --- LÓGICA ATUALIZADA ---
+            const MAX_PAGES_BEFORE_ELLIPSIS = 3; // 1, 2, 3
+            const TOTAL_VISIBLE_PAGES = 5; // 1, 2, 3, ..., [Ultima] (são 5 slots)
+            // ---------------------------
 
             const createPageButton = (page, text = page, isActive = false, isDisabled = false, isEllipsis = false) => {
                 let classes = 'px-3 py-1 rounded-md transition-colors ';
@@ -176,24 +177,23 @@ const appManager = {
 
             // Lógica dos Botões de Página
             if (totalPages <= TOTAL_VISIBLE_PAGES) {
-                // Caso simples: 6 páginas ou menos
+                // Caso simples: 5 páginas ou menos
                 for (let i = 1; i <= totalPages; i++) {
                     paginationHTML += createPageButton(i, i, i === currentPage);
                 }
             } else {
-                // Caso complexo: Mais de 6 páginas (ex: 1, 2, 3, 4, ..., [Ultima])
+                // Caso complexo: Mais de 5 páginas (ex: 1, 2, 3, ..., [Ultima])
                 
-                // Mostra as primeiras 4 páginas
+                // Mostra as primeiras 3 páginas
                 for (let i = 1; i <= MAX_PAGES_BEFORE_ELLIPSIS; i++) {
                     paginationHTML += createPageButton(i, i, i === currentPage);
                 }
 
                 // Botão "..."
-                const ellipsisStart = MAX_PAGES_BEFORE_ELLIPSIS + 1;
+                const ellipsisStart = MAX_PAGES_BEFORE_ELLIPSIS + 1; // Começa em 4
                 const ellipsisEnd = totalPages - 1;
                 const isCurrentPageInEllipsis = (currentPage >= ellipsisStart && currentPage <= ellipsisEnd);
                 
-                // **CORREÇÃO**: Garante que o 'data-page' no '...' seja a página atual se ela estiver no meio
                 const ellipsisPage = isCurrentPageInEllipsis ? currentPage : ellipsisStart;
                 const ellipsisButton = createPageButton(ellipsisPage, '...', isCurrentPageInEllipsis, false, true);
                 paginationHTML += ellipsisButton.replace('>', ` data-start="${ellipsisStart}" data-end="${ellipsisEnd}">`);
@@ -217,13 +217,11 @@ const appManager = {
                 });
             });
 
-            // **CORREÇÃO**: Garantia de 'this'
             const self = this; 
             container.querySelectorAll('.pagination-ellipsis').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const start = parseInt(e.currentTarget.dataset.start);
                     const end = parseInt(e.currentTarget.dataset.end);
-                    // Usa 'self' para garantir que está chamando a função do uiManager
                     self.showPagePopover(e.currentTarget, start, end, currentPage, onPageClickCallback); 
                 });
             });
