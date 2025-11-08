@@ -252,7 +252,7 @@ const appManager = {
     },
 
     leadsManager: {
-        state: { all: [], filter: 'Em Andamento', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null },
+        state: { all: [], filter: 'Em Andamento', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null, searchTerm: '' }, // ADICIONADO searchTerm
         ui: {
             list: document.getElementById('leads-list'),
             tabsContainer: document.getElementById('leads-tabs-container'),
@@ -262,6 +262,7 @@ const appManager = {
             addForm: document.getElementById('add-lead-form'),
             editForm: document.getElementById('edit-lead-form'),
             openAddBtn: document.getElementById('open-add-lead-modal-btn'),
+            searchInput: document.getElementById('search-leads'), // ADICIONADO searchInput
         },
         colors: {
             final: {'Venda Realizada': 'bg-green-100 text-green-800', 'Não Interessado': 'bg-red-100 text-red-800'},
@@ -308,6 +309,13 @@ const appManager = {
                 }
                 this.ui.editForm['edit-proximo-contato'].value = getYYYYMMDD(nextDate);
             });
+
+            // ADICIONADO: Event listener para o campo de busca
+            this.ui.searchInput.addEventListener('input', (e) => {
+                this.state.searchTerm = e.target.value.toUpperCase();
+                this.state.currentPage = 1; // Reseta para a primeira página ao buscar
+                this.filterAndRender();
+            });
         },
         listenForChanges() {
             const q = query(collection(db, 'leads'), where("userId", "==", this.state.currentUser.uid));
@@ -324,7 +332,17 @@ const appManager = {
                 filtered = this.state.all.filter(l => l.statusFinal === this.state.filter);
             }
 
-            // 2. Aplicar a organização (sort)
+            // 2. APLICAR FILTRO DE BUSCA (NOVO)
+            if (this.state.searchTerm) {
+                const term = this.state.searchTerm;
+                filtered = filtered.filter(l => 
+                    l.nome.toUpperCase().includes(term) ||
+                    l.contato.includes(term) || // Busca por contato (já formatado)
+                    (l.produto && l.produto.toUpperCase().includes(term)) // Busca por produto/interesse
+                );
+            }
+
+            // 3. Aplicar a organização (sort)
             const statusPriority = { 'Em Andamento': 1, 'Venda Realizada': 2, 'Não Interessado': 3 };
 
             filtered.sort((a, b) => {
@@ -453,7 +471,7 @@ const appManager = {
     },
     
     posVendaManager: {
-        state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null },
+        state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null, searchTerm: '' }, // ADICIONADO searchTerm
         ui: {
             list: document.getElementById('pos-venda-list'),
             tabsContainer: document.getElementById('pos-venda-tabs-container'),
@@ -463,6 +481,7 @@ const appManager = {
             addForm: document.getElementById('add-pos-venda-form'),
             editForm: document.getElementById('edit-pos-venda-form'),
             openAddBtn: document.getElementById('open-add-pos-venda-modal-btn'),
+            searchInput: document.getElementById('search-pos-venda'), // ADICIONADO searchInput
         },
         colors: {'Aguardando Entrega': 'bg-yellow-100 text-yellow-800', 'Aguardando Montagem': 'bg-blue-100 text-blue-800', 'Concluído': 'bg-green-100 text-green-800'},
         init(user, userData) { this.state.currentUser = user; this.state.currentUserData = userData; this.attachEventListeners(); this.listenForChanges(); },
@@ -491,6 +510,13 @@ const appManager = {
             });
             this.ui.addForm['pv-precisa-montagem'].addEventListener('change', (e) => { this.ui.addForm.querySelector('#pv-montagem-container').classList.toggle('hidden', !e.target.checked); });
             this.ui.editForm['edit-pv-precisa-montagem'].addEventListener('change', (e) => { this.ui.editForm.querySelector('#edit-pv-montagem-container').classList.toggle('hidden', !e.target.checked); });
+
+            // ADICIONADO: Event listener para o campo de busca
+            this.ui.searchInput.addEventListener('input', (e) => {
+                this.state.searchTerm = e.target.value.toUpperCase();
+                this.state.currentPage = 1;
+                this.filterAndRender();
+            });
         },
         listenForChanges() {
             const q = query(collection(db, 'pos_venda'), where("userId", "==", this.state.currentUser.uid));
@@ -504,6 +530,16 @@ const appManager = {
 
             if (this.state.filter !== 'Visão Geral') {
                 filtered = this.state.all.filter(pv => pv.status === this.state.filter);
+            }
+
+            // APLICAR FILTRO DE BUSCA (NOVO)
+            if (this.state.searchTerm) {
+                const term = this.state.searchTerm;
+                filtered = filtered.filter(pv => 
+                    pv.nome.toUpperCase().includes(term) ||
+                    pv.contato.includes(term) ||
+                    (pv.pv && pv.pv.toUpperCase().includes(term))
+                );
             }
 
             const statusPriority = { 'Aguardando Entrega': 1, 'Aguardando Montagem': 2, 'Concluído': 3 };
@@ -642,7 +678,7 @@ const appManager = {
     },
 
     sacManager: {
-       state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null },
+       state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null, searchTerm: '' }, // ADICIONADO searchTerm
         ui: {
             list: document.getElementById('sac-list'),
             tabsContainer: document.getElementById('sac-tabs-container'),
@@ -652,6 +688,7 @@ const appManager = {
             addForm: document.getElementById('add-sac-form'),
             editForm: document.getElementById('edit-sac-form'),
             openAddBtn: document.getElementById('open-add-sac-modal-btn'),
+            searchInput: document.getElementById('search-sac'), // ADICIONADO searchInput
         },
         colors: {'Aberta': 'bg-red-100 text-red-800', 'Em Análise': 'bg-yellow-100 text-yellow-800', 'Resolvida': 'bg-green-100 text-green-800'},
         init(user, userData) { this.state.currentUser = user; this.state.currentUserData = userData; this.attachEventListeners(); this.listenForChanges(); },
@@ -677,6 +714,13 @@ const appManager = {
                 const button = e.target.closest('button');
                 if (button && button.dataset.page) { this.state.currentPage = parseInt(button.dataset.page); this.filterAndRender(); }
             });
+
+            // ADICIONADO: Event listener para o campo de busca
+            this.ui.searchInput.addEventListener('input', (e) => {
+                this.state.searchTerm = e.target.value.toUpperCase();
+                this.state.currentPage = 1;
+                this.filterAndRender();
+            });
         },
         listenForChanges() {
             const q = query(collection(db, 'sac_occurrences'), where("userId", "==", this.state.currentUser.uid));
@@ -690,6 +734,16 @@ const appManager = {
 
             if (this.state.filter !== 'Visão Geral') {
                 filtered = this.state.all.filter(item => item.status === this.state.filter);
+            }
+
+            // APLICAR FILTRO DE BUSCA (NOVO)
+            if (this.state.searchTerm) {
+                const term = this.state.searchTerm;
+                filtered = filtered.filter(item => 
+                    item.nome.toUpperCase().includes(term) ||
+                    item.contato.includes(term) ||
+                    (item.pv && item.pv.toUpperCase().includes(term))
+                );
             }
 
             const statusPriority = { 'Aberta': 1, 'Em Análise': 2, 'Resolvida': 3 };
