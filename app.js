@@ -57,6 +57,12 @@ const appManager = {
         pageTitle: document.getElementById('page-title'),
         loadingSpinner: document.getElementById('loading-spinner'),
         userDisplayName: document.getElementById('user-display-name'),
+        // --- NOVO: Gerenciamento do Popover de Paginação ---
+        pagePopover: document.getElementById('page-popover'),
+        pagePopoverContent: document.getElementById('page-popover-content'),
+        paginationCallback: null, // Callback da paginação ativa
+        // ----------------------------------------------------
+
         init() {
             this.menuButton.addEventListener('click', () => {
                  this.sidebar.classList.toggle('open'); this.overlay.classList.toggle('hidden');
@@ -71,6 +77,29 @@ const appManager = {
              document.querySelectorAll('.nav-link').forEach(l => l.addEventListener('click', e => {
                 e.preventDefault(); this.showPage(l.dataset.page);
             }));
+
+            // --- NOVO: Listeners do Popover de Paginação ---
+            // Fechar ao clicar fora
+            document.addEventListener('click', (e) => {
+                if (!this.pagePopover.classList.contains('hidden')) {
+                    if (!this.pagePopover.contains(e.target) && !e.target.closest('.pagination-ellipsis')) {
+                        this.hidePagePopover();
+                    }
+                }
+            }, true); // Usar 'true' para capturar o evento na fase de captura
+
+            // Clique dentro do popover (delegação de evento)
+            this.pagePopoverContent.addEventListener('click', (e) => {
+                const button = e.target.closest('.popover-page-btn');
+                if (button && this.paginationCallback) {
+                    const newPage = parseInt(button.dataset.page);
+                    if (!isNaN(newPage)) {
+                        this.paginationCallback(newPage);
+                    }
+                    this.hidePagePopover();
+                }
+            });
+            // ------------------------------------------------
         },
         showPage(pageId) {
             document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
@@ -82,11 +111,119 @@ const appManager = {
             this.sidebar.classList.remove('open');
             this.overlay.classList.add('hidden');
             this.body.classList.remove('modal-open');
+            this.hidePagePopover(); // Esconde o popover ao mudar de página
         },
         showLoading(show) {
             this.loadingSpinner.style.display = show ? 'flex' : 'none';
+        },
+        // --- NOVAS FUNÇÕES DE PAGINAÇÃO ---
+        showPagePopover(button, start, end, currentPage, callback) {
+            this.pagePopoverContent.innerHTML = '';
+            this.paginationCallback = callback; // Armazena o callback correto
+            
+            let content = '';
+            for (let i = start; i <= end; i++) {
+                const isActive = i === currentPage;
+                content += `<button data-page="${i}" class="popover-page-btn ${isActive ? 'active' : ''}">${i}</button>`;
+            }
+            this.pagePopoverContent.innerHTML = content;
+
+            const rect = button.getBoundingClientRect();
+            this.pagePopover.classList.remove('hidden');
+            
+            // Posiciona o popover acima do botão "..."
+            const popoverRect = this.pagePopover.getBoundingClientRect();
+            let top = rect.top - popoverRect.height - 8; // 8px de espaço
+            let left = rect.left + (rect.width / 2) - (popoverRect.width / 2);
+
+            // Ajusta se sair da tela
+            if (top < 0) { top = rect.bottom + 8; }
+            if (left < 0) { left = 8; }
+            if (left + popoverRect.width > window.innerWidth) { left = window.innerWidth - popoverRect.width - 8; }
+
+            this.pagePopover.style.top = `${top}px`;
+            this.pagePopover.style.left = `${left}px`;
+        },
+        hidePagePopover() {
+            this.pagePopover.classList.add('hidden');
+            this.paginationCallback = null;
+        },
+        renderPagination(container, totalItems, itemsPerPage, currentPage, onPageClickCallback) {
+            container.innerHTML = '';
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            if (totalPages <= 1) return;
+
+            const MAX_PAGES_BEFORE_ELLIPSIS = 4;
+            const TOTAL_VISIBLE_PAGES = 6; // 1, 2, 3, 4, ..., [Ultima] (são 6 slots)
+
+            const createPageButton = (page, text = page, isActive = false, isDisabled = false, isEllipsis = false) => {
+                let classes = 'px-3 py-1 rounded-md transition-colors ';
+                if (isEllipsis) {
+                    classes += `pagination-ellipsis ${isActive ? 'bg-blue-100 text-zenir-blue' : 'bg-white text-gray-700 hover:bg-gray-100'}`;
+                } else {
+                    classes += `page-btn ${isActive ? 'bg-zenir-blue text-white' : (isDisabled ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100')}`;
+                }
+                return `<button data-page="${page}" class="${classes}" ${isDisabled ? 'disabled' : ''}>${text}</button>`;
+            };
+
+            let paginationHTML = '';
+
+            // Botão "Anterior"
+            paginationHTML += createPageButton(currentPage - 1, 'Anterior', false, currentPage === 1);
+
+            // Lógica dos Botões de Página
+            if (totalPages <= TOTAL_VISIBLE_PAGES) {
+                // Caso simples: 6 páginas ou menos
+                for (let i = 1; i <= totalPages; i++) {
+                    paginationHTML += createPageButton(i, i, i === currentPage);
+                }
+            } else {
+                // Caso complexo: Mais de 6 páginas (ex: 1, 2, 3, 4, ..., [Ultima])
+                
+                // Mostra as primeiras 4 páginas
+                for (let i = 1; i <= MAX_PAGES_BEFORE_ELLIPSIS; i++) {
+                    paginationHTML += createPageButton(i, i, i === currentPage);
+                }
+
+                // Botão "..."
+                const ellipsisStart = MAX_PAGES_BEFORE_ELLIPSIS + 1;
+                const ellipsisEnd = totalPages - 1;
+                const isCurrentPageInEllipsis = (currentPage >= ellipsisStart && currentPage <= ellipsisEnd);
+                
+                const ellipsisButton = createPageButton(currentPage, '...', isCurrentPageInEllipsis, false, true);
+                // Adiciona os dados para o popover
+                paginationHTML += ellipsisButton.replace('>', ` data-start="${ellipsisStart}" data-end="${ellipsisEnd}">`);
+
+                // Última Página
+                paginationHTML += createPageButton(totalPages, totalPages, totalPages === currentPage);
+            }
+
+            // Botão "Próximo"
+            paginationHTML += createPageButton(currentPage + 1, 'Próximo', false, currentPage === totalPages);
+
+            container.innerHTML = paginationHTML;
+
+            // Adiciona os 'event listeners' aos botões
+            container.querySelectorAll('.page-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const newPage = parseInt(e.currentTarget.dataset.page);
+                    if (!isNaN(newPage)) {
+                        onPageClickCallback(newPage);
+                    }
+                });
+            });
+
+            container.querySelectorAll('.pagination-ellipsis').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const start = parseInt(e.currentTarget.dataset.start);
+                    const end = parseInt(e.currentTarget.dataset.end);
+                    this.showPagePopover(e.currentTarget, start, end, currentPage, onPageClickCallback);
+                });
+            });
         }
+        // --- FIM DAS FUNÇÕES DE PAGINAÇÃO ---
     },
+
 
     deleteModalManager: {
         modal: document.getElementById('delete-confirmation-modal'),
@@ -219,7 +356,7 @@ const appManager = {
                             appManager.uiManager.userDisplayName.textContent = `Olá, ${userData.preferredName || userData.name.split(' ')[0]}!`;
                             document.getElementById('nav-users-link').classList.toggle('hidden', userData.role !== 'admin');
 
-                            appManager.uiManager.init();
+                            appManager.uiManager.init(); // <- Agora inicializa o popover aqui
                             appManager.deleteModalManager.init();
                             appManager.leadsManager.init(user, userData);
                             appManager.posVendaManager.init(user, userData);
@@ -252,7 +389,7 @@ const appManager = {
     },
 
     leadsManager: {
-        state: { all: [], filter: 'Em Andamento', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null, searchTerm: '' }, // ADICIONADO searchTerm
+        state: { all: [], filter: 'Em Andamento', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null, searchTerm: '' }, 
         ui: {
             list: document.getElementById('leads-list'),
             tabsContainer: document.getElementById('leads-tabs-container'),
@@ -262,7 +399,7 @@ const appManager = {
             addForm: document.getElementById('add-lead-form'),
             editForm: document.getElementById('edit-lead-form'),
             openAddBtn: document.getElementById('open-add-lead-modal-btn'),
-            searchInput: document.getElementById('search-leads'), // ADICIONADO searchInput
+            searchInput: document.getElementById('search-leads'), 
         },
         colors: {
             final: {'Venda Realizada': 'bg-green-100 text-green-800', 'Não Interessado': 'bg-red-100 text-red-800'},
@@ -291,10 +428,7 @@ const appManager = {
                 const targetTab = e.target.closest('.tab-leads');
                 if(targetTab) { this.state.filter = targetTab.dataset.filter; this.state.currentPage = 1; this.filterAndRender(); }
             });
-             this.ui.pagination.addEventListener('click', (e) => {
-                const button = e.target.closest('button');
-                if (button && button.dataset.page) { this.state.currentPage = parseInt(button.dataset.page); this.filterAndRender(); }
-            });
+            // REMOVIDO: a lógica de paginação agora é centralizada
             this.ui.editForm['edit-status-final'].addEventListener('change', (e) => {
                  const isFinal = e.target.value !== 'Em Andamento';
                  this.ui.editForm['edit-estagio-contato'].disabled = isFinal;
@@ -309,8 +443,6 @@ const appManager = {
                 }
                 this.ui.editForm['edit-proximo-contato'].value = getYYYYMMDD(nextDate);
             });
-
-            // ADICIONADO: Event listener para o campo de busca
             this.ui.searchInput.addEventListener('input', (e) => {
                 this.state.searchTerm = e.target.value.toUpperCase();
                 this.state.currentPage = 1; // Reseta para a primeira página ao buscar
@@ -327,35 +459,29 @@ const appManager = {
         filterAndRender() {
             let filtered = this.state.all;
 
-            // 1. Filtrar com base na aba selecionada
             if (this.state.filter !== 'Visão Geral') {
                 filtered = this.state.all.filter(l => l.statusFinal === this.state.filter);
             }
 
-            // 2. APLICAR FILTRO DE BUSCA (NOVO)
             if (this.state.searchTerm) {
                 const term = this.state.searchTerm;
                 filtered = filtered.filter(l => 
                     l.nome.toUpperCase().includes(term) ||
-                    l.contato.includes(term) || // Busca por contato (já formatado)
-                    (l.produto && l.produto.toUpperCase().includes(term)) // Busca por produto/interesse
+                    l.contato.includes(term) || 
+                    (l.produto && l.produto.toUpperCase().includes(term)) 
                 );
             }
 
-            // 3. Aplicar a organização (sort)
             const statusPriority = { 'Em Andamento': 1, 'Venda Realizada': 2, 'Não Interessado': 3 };
 
             filtered.sort((a, b) => {
-                // Lógica para a aba "Visão Geral"
                 if (this.state.filter === 'Visão Geral') {
                     const priorityA = statusPriority[a.statusFinal] || 4;
                     const priorityB = statusPriority[b.statusFinal] || 4;
-                    // Primeiro, agrupa por status
                     if (priorityA !== priorityB) {
                         return priorityA - priorityB;
                     }
                 }
-                // Para todos os casos (dentro dos grupos ou em outras abas), organiza por data de retorno
                 const dateA = a.proximoContato || '9999-12-31';
                 const dateB = b.proximoContato || '9999-12-31';
                 return dateA.localeCompare(dateB);
@@ -366,9 +492,11 @@ const appManager = {
             this.updateTabStyles();
         },
         render(leadsToRender) {
-            this.ui.list.innerHTML = ''; this.ui.pagination.innerHTML = '';
-            if (leadsToRender.length === 0) { this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhum lead encontrado.</p>`; return; }
+            this.ui.list.innerHTML = '';
+            if (leadsToRender.length === 0) { this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhum lead encontrado.</p>`; }
+            
             const paginatedItems = leadsToRender.slice((this.state.currentPage - 1) * this.state.itemsPerPage, this.state.currentPage * this.state.itemsPerPage);
+            
             paginatedItems.forEach(lead => {
                 const isFinal = lead.statusFinal !== 'Em Andamento';
                 const statusText = isFinal ? lead.statusFinal : lead.estagioContato;
@@ -380,16 +508,22 @@ const appManager = {
                 card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${lead.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${statusText}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${lead.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">Interesse:</strong> <span class="font-normal">${lead.produto}</span></p><p><strong class="font-semibold text-gray-700">Objeção:</strong> <span class="font-normal">${lead.motivo || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Proposta:</strong> <span class="font-normal">${lead.proposta || 'N/A'}</span></p>${lead.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${lead.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-between items-center"><div class="text-sm"><span class="font-semibold text-gray-700">Retornar em:</span><p class="font-bold ${isFinal ? 'text-gray-400 line-through' : 'text-zenir-red'}">${formatDate(lead.proximoContato)}</p></div><div class="flex gap-3">${whatsappBtn}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div></div>`;
                 this.ui.list.appendChild(card);
             });
+
+            // ATUALIZADO: Chama o renderizador de paginação centralizado
             this.renderPagination(leadsToRender.length);
         },
         renderPagination(totalItems) {
-            const totalPages = Math.ceil(totalItems / this.state.itemsPerPage);
-            if (totalPages <= 1) return;
-            let paginationHTML = '';
-            paginationHTML += `<button data-page="${this.state.currentPage - 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === 1 ? 'disabled' : ''}>Anterior</button>`;
-            for (let i = 1; i <= totalPages; i++) { paginationHTML += `<button data-page="${i}" class="px-3 py-1 rounded-md ${this.state.currentPage === i ? 'bg-zenir-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}">${i}</button>`; }
-            paginationHTML += `<button data-page="${this.state.currentPage + 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === totalPages ? 'disabled' : ''}>Próximo</button>`;
-            this.ui.pagination.innerHTML = paginationHTML;
+            // Esta função agora é um wrapper para o gerenciador central
+            appManager.renderPagination(
+                this.ui.pagination,
+                totalItems,
+                this.state.itemsPerPage,
+                this.state.currentPage,
+                (newPage) => {
+                    this.state.currentPage = newPage;
+                    this.filterAndRender(); // Re-renderiza apenas este módulo
+                }
+            );
         },
         updateTabCounts() {
             const counts = { 'Visão Geral': this.state.all.length, 'Em Andamento': this.state.all.filter(l => l.statusFinal === 'Em Andamento').length, 'Venda Realizada': this.state.all.filter(l => l.statusFinal === 'Venda Realizada').length, 'Não Interessado': this.state.all.filter(l => l.statusFinal === 'Não Interessado').length };
@@ -471,7 +605,7 @@ const appManager = {
     },
     
     posVendaManager: {
-        state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null, searchTerm: '' }, // ADICIONADO searchTerm
+        state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null, searchTerm: '' }, 
         ui: {
             list: document.getElementById('pos-venda-list'),
             tabsContainer: document.getElementById('pos-venda-tabs-container'),
@@ -481,7 +615,7 @@ const appManager = {
             addForm: document.getElementById('add-pos-venda-form'),
             editForm: document.getElementById('edit-pos-venda-form'),
             openAddBtn: document.getElementById('open-add-pos-venda-modal-btn'),
-            searchInput: document.getElementById('search-pos-venda'), // ADICIONADO searchInput
+            searchInput: document.getElementById('search-pos-venda'), 
         },
         colors: {'Aguardando Entrega': 'bg-yellow-100 text-yellow-800', 'Aguardando Montagem': 'bg-blue-100 text-blue-800', 'Concluído': 'bg-green-100 text-green-800'},
         init(user, userData) { this.state.currentUser = user; this.state.currentUserData = userData; this.attachEventListeners(); this.listenForChanges(); },
@@ -504,14 +638,9 @@ const appManager = {
                 const targetTab = e.target.closest('.tab-pos-venda');
                 if(targetTab) { this.state.filter = targetTab.dataset.filter; this.state.currentPage = 1; this.filterAndRender(); }
             });
-            this.ui.pagination.addEventListener('click', (e) => {
-                const button = e.target.closest('button');
-                if (button && button.dataset.page) { this.state.currentPage = parseInt(button.dataset.page); this.filterAndRender(); }
-            });
+            // REMOVIDO: a lógica de paginação agora é centralizada
             this.ui.addForm['pv-precisa-montagem'].addEventListener('change', (e) => { this.ui.addForm.querySelector('#pv-montagem-container').classList.toggle('hidden', !e.target.checked); });
             this.ui.editForm['edit-pv-precisa-montagem'].addEventListener('change', (e) => { this.ui.editForm.querySelector('#edit-pv-montagem-container').classList.toggle('hidden', !e.target.checked); });
-
-            // ADICIONADO: Event listener para o campo de busca
             this.ui.searchInput.addEventListener('input', (e) => {
                 this.state.searchTerm = e.target.value.toUpperCase();
                 this.state.currentPage = 1;
@@ -532,7 +661,6 @@ const appManager = {
                 filtered = this.state.all.filter(pv => pv.status === this.state.filter);
             }
 
-            // APLICAR FILTRO DE BUSCA (NOVO)
             if (this.state.searchTerm) {
                 const term = this.state.searchTerm;
                 filtered = filtered.filter(pv => 
@@ -570,8 +698,7 @@ const appManager = {
         },
         render(pvToRender) {
             this.ui.list.innerHTML = '';
-            this.ui.pagination.innerHTML = '';
-             if (pvToRender.length === 0) { this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhum registro encontrado.</p>`; return; }
+             if (pvToRender.length === 0) { this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhum registro encontrado.</p>`; }
             
             const startIndex = (this.state.currentPage - 1) * this.state.itemsPerPage;
             const paginatedItems = pvToRender.slice(startIndex, startIndex + this.state.itemsPerPage);
@@ -585,16 +712,22 @@ const appManager = {
                 card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Produto:</strong> ${item.produto}</p><p><strong class="font-semibold text-gray-700">Entrega:</strong> <span class="font-bold text-zenir-red">${formatDate(item.previsaoEntrega)}</span></p>${item.precisaMontagem && item.previsaoMontagem ? `<p><strong class="font-semibold">Montagem:</strong> <span class="font-bold text-zenir-blue">${formatDate(item.previsaoMontagem)}</span></p>` : ''}${item.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${item.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-end items-center gap-3">${whatsappButton}<button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div>`;
                 this.ui.list.appendChild(card);
             });
+            
+            // ATUALIZADO: Chama o renderizador de paginação centralizado
             this.renderPagination(pvToRender.length);
         },
         renderPagination(totalItems) {
-            const totalPages = Math.ceil(totalItems / this.state.itemsPerPage);
-            if (totalPages <= 1) return;
-            let paginationHTML = '';
-            paginationHTML += `<button data-page="${this.state.currentPage - 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === 1 ? 'disabled' : ''}>Anterior</button>`;
-            for (let i = 1; i <= totalPages; i++) { paginationHTML += `<button data-page="${i}" class="px-3 py-1 rounded-md ${this.state.currentPage === i ? 'bg-zenir-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}">${i}</button>`; }
-            paginationHTML += `<button data-page="${this.state.currentPage + 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === totalPages ? 'disabled' : ''}>Próximo</button>`;
-            this.ui.pagination.innerHTML = paginationHTML;
+            // Esta função agora é um wrapper para o gerenciador central
+            appManager.renderPagination(
+                this.ui.pagination,
+                totalItems,
+                this.state.itemsPerPage,
+                this.state.currentPage,
+                (newPage) => {
+                    this.state.currentPage = newPage;
+                    this.filterAndRender(); // Re-renderiza apenas este módulo
+                }
+            );
         },
         async handleFormSubmit(event, type) {
             event.preventDefault();
@@ -678,7 +811,7 @@ const appManager = {
     },
 
     sacManager: {
-       state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null, searchTerm: '' }, // ADICIONADO searchTerm
+       state: { all: [], filter: 'Visão Geral', docToDelete: null, currentPage: 1, itemsPerPage: 6, currentUser: null, currentUserData: null, searchTerm: '' }, 
         ui: {
             list: document.getElementById('sac-list'),
             tabsContainer: document.getElementById('sac-tabs-container'),
@@ -688,7 +821,7 @@ const appManager = {
             addForm: document.getElementById('add-sac-form'),
             editForm: document.getElementById('edit-sac-form'),
             openAddBtn: document.getElementById('open-add-sac-modal-btn'),
-            searchInput: document.getElementById('search-sac'), // ADICIONADO searchInput
+            searchInput: document.getElementById('search-sac'), 
         },
         colors: {'Aberta': 'bg-red-100 text-red-800', 'Em Análise': 'bg-yellow-100 text-yellow-800', 'Resolvida': 'bg-green-100 text-green-800'},
         init(user, userData) { this.state.currentUser = user; this.state.currentUserData = userData; this.attachEventListeners(); this.listenForChanges(); },
@@ -710,12 +843,7 @@ const appManager = {
                 const targetTab = e.target.closest('.tab-sac');
                 if(targetTab) { this.state.filter = targetTab.dataset.filter; this.state.currentPage = 1; this.filterAndRender(); }
             });
-            this.ui.pagination.addEventListener('click', (e) => {
-                const button = e.target.closest('button');
-                if (button && button.dataset.page) { this.state.currentPage = parseInt(button.dataset.page); this.filterAndRender(); }
-            });
-
-            // ADICIONADO: Event listener para o campo de busca
+            // REMOVIDO: a lógica de paginação agora é centralizada
             this.ui.searchInput.addEventListener('input', (e) => {
                 this.state.searchTerm = e.target.value.toUpperCase();
                 this.state.currentPage = 1;
@@ -736,7 +864,6 @@ const appManager = {
                 filtered = this.state.all.filter(item => item.status === this.state.filter);
             }
 
-            // APLICAR FILTRO DE BUSCA (NOVO)
             if (this.state.searchTerm) {
                 const term = this.state.searchTerm;
                 filtered = filtered.filter(item => 
@@ -767,8 +894,7 @@ const appManager = {
         },
         render(itemsToRender) {
             this.ui.list.innerHTML = '';
-            this.ui.pagination.innerHTML = '';
-            if (itemsToRender.length === 0) { this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhuma ocorrência encontrada.</p>`; return; }
+            if (itemsToRender.length === 0) { this.ui.list.innerHTML = `<p class="text-gray-500 col-span-full text-center mt-8">Nenhuma ocorrência encontrada.</p>`; }
             
             const startIndex = (this.state.currentPage - 1) * this.state.itemsPerPage;
             const paginatedItems = itemsToRender.slice(startIndex, startIndex + this.state.itemsPerPage);
@@ -781,16 +907,22 @@ const appManager = {
                 card.innerHTML = `<div><div class="flex justify-between items-start mb-2"><h3 class="text-xl font-bold text-gray-800">${item.nome}</h3><span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColor}">${item.status}</span></div><p class="text-sm text-gray-600 mb-3"><i class="fas fa-phone-alt text-gray-400 mr-2"></i>${item.contato}</p><div class="bg-gray-50 p-3 rounded-md text-sm space-y-1"><p><strong class="font-semibold text-gray-700">PV:</strong> <span class="font-normal">${item.pv || 'N/A'}</span></p><p><strong class="font-semibold text-gray-700">Tipo:</strong> ${item.tipo}</p><p><strong class="font-semibold text-gray-700">Descrição:</strong> ${item.descricao}</p>${item.observacao ? `<p><strong class="font-semibold text-gray-700">Observação:</strong> <span class="font-normal">${item.observacao}</span></p>` : ''}</div></div><div class="border-t pt-3 flex justify-between items-center"><div class="text-sm text-gray-500">Data: ${formatDate(item.data)}</div><div class="flex gap-3"><button data-action="edit" class="text-zenir-blue hover:opacity-75"><i class="fas fa-edit fa-lg"></i></button><button data-action="delete" class="text-zenir-red hover:opacity-75"><i class="fas fa-trash-alt fa-lg"></i></button></div></div>`;
                 this.ui.list.appendChild(card);
             });
+
+            // ATUALIZADO: Chama o renderizador de paginação centralizado
             this.renderPagination(itemsToRender.length);
         },
         renderPagination(totalItems) {
-            const totalPages = Math.ceil(totalItems / this.state.itemsPerPage);
-            if (totalPages <= 1) return;
-            let paginationHTML = '';
-            paginationHTML += `<button data-page="${this.state.currentPage - 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === 1 ? 'disabled' : ''}>Anterior</button>`;
-            for (let i = 1; i <= totalPages; i++) { paginationHTML += `<button data-page="${i}" class="px-3 py-1 rounded-md ${this.state.currentPage === i ? 'bg-zenir-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}">${i}</button>`; }
-            paginationHTML += `<button data-page="${this.state.currentPage + 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === totalPages ? 'disabled' : ''}>Próximo</button>`;
-            this.ui.pagination.innerHTML = paginationHTML;
+            // Esta função agora é um wrapper para o gerenciador central
+            appManager.renderPagination(
+                this.ui.pagination,
+                totalItems,
+                this.state.itemsPerPage,
+                this.state.currentPage,
+                (newPage) => {
+                    this.state.currentPage = newPage;
+                    this.filterAndRender(); // Re-renderiza apenas este módulo
+                }
+            );
         },
         async handleFormSubmit(event, type) {
             event.preventDefault();
@@ -871,10 +1003,7 @@ const appManager = {
                 const targetTab = e.target.closest('.tab-users');
                 if(targetTab) { this.state.filter = targetTab.dataset.filter; this.state.currentPage = 1; this.filterAndRender(); }
             });
-            this.ui.pagination.addEventListener('click', (e) => {
-                const button = e.target.closest('button');
-                if (button && button.dataset.page) { this.state.currentPage = parseInt(button.dataset.page); this.filterAndRender(); }
-            });
+            // REMOVIDO: a lógica de paginação agora é centralizada
             this.ui.editForm.addEventListener('submit', (e) => this.handleEditFormSubmit(e));
             this.ui.editForm['edit-user-phone'].addEventListener('input', maskPhone);
         },
@@ -901,8 +1030,7 @@ const appManager = {
         },
         render(usersToRender) { 
             this.ui.list.innerHTML = '';
-            this.ui.pagination.innerHTML = '';
-            if(usersToRender.length === 0) { this.ui.list.innerHTML = '<p class="p-4 text-center text-gray-500">Nenhum usuário encontrado.</p>'; return; }
+            if(usersToRender.length === 0) { this.ui.list.innerHTML = '<p class="p-4 text-center text-gray-500">Nenhum usuário encontrado.</p>'; }
 
             const paginatedItems = usersToRender.slice((this.state.currentPage - 1) * this.state.itemsPerPage, this.state.currentPage * this.state.itemsPerPage);
 
@@ -947,16 +1075,22 @@ const appManager = {
                 `;
                 this.ui.list.appendChild(userDiv);
             });
-             this.renderPagination(usersToRender.length);
+
+            // ATUALIZADO: Chama o renderizador de paginação centralizado
+            this.renderPagination(usersToRender.length);
         },
         renderPagination(totalItems) {
-            const totalPages = Math.ceil(totalItems / this.state.itemsPerPage);
-            if (totalPages <= 1) return;
-            let paginationHTML = '';
-            paginationHTML += `<button data-page="${this.state.currentPage - 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === 1 ? 'disabled' : ''}>Anterior</button>`;
-            for (let i = 1; i <= totalPages; i++) { paginationHTML += `<button data-page="${i}" class="px-3 py-1 rounded-md ${this.state.currentPage === i ? 'bg-zenir-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}">${i}</button>`; }
-            paginationHTML += `<button data-page="${this.state.currentPage + 1}" class="px-3 py-1 rounded-md ${this.state.currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}" ${this.state.currentPage === totalPages ? 'disabled' : ''}>Próximo</button>`;
-            this.ui.pagination.innerHTML = paginationHTML;
+            // Esta função agora é um wrapper para o gerenciador central
+            appManager.renderPagination(
+                this.ui.pagination,
+                totalItems,
+                this.state.itemsPerPage,
+                this.state.currentPage,
+                (newPage) => {
+                    this.state.currentPage = newPage;
+                    this.filterAndRender(); // Re-renderiza apenas este módulo
+                }
+            );
          },
          updateTabCounts() {
             const counts = { 'Pendentes': this.state.all.filter(u => u.status === 'Pendente').length, 'Aprovados': this.state.all.filter(u => u.status === 'Aprovado').length, 'Inativos': this.state.all.filter(u => u.status === 'Inativo').length };
