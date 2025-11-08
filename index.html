@@ -176,7 +176,7 @@
                         <nav id="leads-tabs-container" class="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto overflow-y-hidden pb-1" aria-label="Tabs"></nav>
                     </div>
                     <div id="leads-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-                    <div id="leads-pagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+                    <div id="leads-pagination" class="mt-8 flex justify-center items-center space-x-2 relative"></div>
                 </div>
 
                 <!-- PÁGINA DE PÓS-VENDA -->
@@ -198,7 +198,7 @@
                         <nav id="pos-venda-tabs-container" class="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto overflow-y-hidden pb-1" aria-label="Tabs"></nav>
                     </div>
                     <div id="pos-venda-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-                    <div id="pos-venda-pagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+                    <div id="pos-venda-pagination" class="mt-8 flex justify-center items-center space-x-2 relative"></div>
                 </div>
 
                 <!-- PÁGINA DE SAC -->
@@ -220,7 +220,7 @@
                         <nav id="sac-tabs-container" class="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto overflow-y-hidden pb-1" aria-label="Tabs"></nav>
                     </div>
                     <div id="sac-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-                    <div id="sac-pagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+                    <div id="sac-pagination" class="mt-8 flex justify-center items-center space-x-2 relative"></div>
                 </div>
 
                  <!-- PÁGINA DE USUÁRIOS (Admin) -->
@@ -229,7 +229,7 @@
                         <nav id="users-tabs-container" class="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto overflow-y-hidden pb-1" aria-label="Tabs"></nav>
                     </div>
                     <div id="users-list" class="bg-white rounded-lg shadow overflow-hidden"></div>
-                    <div id="users-pagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+                    <div id="users-pagination" class="mt-8 flex justify-center items-center space-x-2 relative"></div>
                 </div>
             </main>
         </div>
@@ -609,6 +609,13 @@
                     <button type="submit" class="bg-zenir-blue text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-800">Salvar</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Page Popover ("Balãozinho" da Paginação) -->
+    <div id="page-popover" class="page-popover hidden fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 w-64 max-h-48 overflow-y-auto">
+        <div id="page-popover-content" class="p-2 grid grid-cols-4 gap-2">
+            <!-- As páginas serão injetadas aqui pelo JS -->
         </div>
     </div>
 
